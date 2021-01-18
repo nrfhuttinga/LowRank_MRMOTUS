@@ -1,0 +1,10 @@
+62b7a9a551a90a4d29e62c39086f80f0  Makefile.MATLAB
+d578d61fee27aae48fca68a3f95da547  Makefile.AVS
+07d905c702710c069d2c843d7cd1462b  sdc3_MAT.c
+41946868f8fb8ab61eae3e6865fd7ef5  sdc3_AVS.cpp
+b481ec7fe5ebbd0e2f1ab40a234e9b85  sdc3grid_kernel.c
+0751745fd2801d23e26e6b55438644a1  README.txt
+4bea8e9b981bb21c87fade66f4b1dbac  testmex.m
+966e09d7ac245c4ac5b352b357570efc  soln_DCF.raw
+34b7505a6d8ef585d51103f2b7c41916  spi_crds.raw
+ccaff40b1b9ea51e1b6561dba9448b15  ChangeLog.txt

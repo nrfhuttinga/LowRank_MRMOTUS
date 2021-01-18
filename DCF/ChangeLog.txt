@@ -1,0 +1,13 @@
+This is a change log for the sdc3_nrz package.
+
+Rev: 2011 apr
+
+	First release.
+
+Rev: 2011 aug
+
+	-Added a simple MATLAB script and data to aid users in
+	testing their distribution.
+	-Added MD5 checksums for each file contained in the
+	distribution.
+

@@ -1,0 +1,1 @@
+set(gcf,'color','w');

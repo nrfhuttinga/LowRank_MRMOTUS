@@ -1,0 +1,16 @@
+This software in this repository is provided free of charge and comes without any warranty. 
+The University Medical Center Utrecht nor the author does not take any liability for problems 
+or damage of any kind resulting from the use of the files provided. Operation of the software is solely 
+at the user's own risk. The software is provided for non-commercial, academic use only, and
+must not be used for diagnostic purposes. Usage or distribution of the software for commercial 
+purpose is prohibited. All rights belong to the author Niek Huttinga, UMC Utrecht.
+
+
+If you use the software for academic work, please give credit in publications and cite related publications:
+
+* Huttinga et al, "Nonrigid 3D motion estimation at high temporal resolution from prospectively undersampled k‐space data using low‐rank MR‐MOTUS", 2020, Magn. Reson. Med.
+* Huttinga et al, "MR-MOTUS: model-based non-rigid motion estimation for MR-guided radiotherapy using a reference image and minimal k-space data", 2019, Phys. Med. Biol.
+
+
+
+
