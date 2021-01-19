@@ -1,6 +1,6 @@
 % Script to preprocess raw k-space data acquired and reconstruct a reference image
 %
-% Copyright Niek Huttinga, UMCU Utrecht, 2020, all rights reserved.
+% Copyright Niek Huttinga, UMC Utrecht, 2020, all rights reserved.
 
 
 clear all;

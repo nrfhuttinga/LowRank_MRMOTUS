@@ -3,7 +3,7 @@ function [index,phase] = RespiratoryBinning(par)
     % 
     % Inputs:
     %   par                         - structure with all required data
-    %       .binning_strategy       - strategy for the sorting: amplitude | phase | hybrid (phase, then amplitude), (default: phase)
+    %       .binning_strategy       - strategy for the sorting: amplitude | phase | hybrid (phase, then amplitude) | amplitude binning in mid position,  (default: phase)
     %       .thresh                 - threshold for the peak detection (default: 0.005)
     %       .resp_phases            - number of respiratory phases to bin in (default: 5)
     %       .return_extreme_phase   - 0 - return all phases, 1 - return end-exhale, 2 - return end-inhale (default: 0)
@@ -15,7 +15,7 @@ function [index,phase] = RespiratoryBinning(par)
     %  Written by Bjorn Stemkens, UMC Utrecht, edited by Niek Huttinga, UMC
     %  Utrecht, 2020.
     
-    par = set_default(par,'binning_strategy','phase');      % amplitude | phase | hybrid (phase, then amplitude)
+    par = set_default(par,'binning_strategy','phase');      % amplitude | phase | hybrid (phase, then amplitude) | amplitude binning in mid position
     par = set_default(par,'thresh',0.005);                  % sensitivity of the peak detection
     par = set_default(par,'resp_phases',5);                 % number of respiratory phases to bin in
     par = set_default(par,'return_extreme_phase',0);        % 0 - return all phases, 1 - return end-exhale, 2 - return end-inhale
@@ -117,7 +117,70 @@ function [index,phase] = RespiratoryBinning(par)
 
         index = [fliplr(real_in_index),real_ex_index];
 
-    else
+    elseif strcmpi('amplitude_midpos',par.binning_strategy)
 
+        n_readouts = 0;
+        par.resp_phases = par.resp_phases + 1; 
+        while n_readouts < par.target_number_of_readouts && par.resp_phases > 5 
+
+            clearvars  ci_95
+
+
+
+            par.resp_phases = par.resp_phases - 1;
+            [amplitudes,index] = sort(par.surrogate_signal,'descend');
+            bin_oversampling = 100;
+
+
+            n=1;
+            mu_amplitudes = mean(amplitudes(:));
+            sigma_amplitudes = std(amplitudes(:));
+
+            z_score = 1.95;
+            ci_95 = [mu_amplitudes-z_score*sigma_amplitudes/sqrt(n) , mu_amplitudes+z_score*sigma_amplitudes/sqrt(n)];
+            motion_amplitude_range = (ci_95(2)-ci_95(1)); 
+
+            ci_95 = ci_95 + [1 -1]*motion_amplitude_range*(2/5);
+
+            bin_width = motion_amplitude_range/par.resp_phases;
+
+            if bin_width > (ci_95(2)-ci_95(1) ) 
+                break;
+            else
+                clearvars amplitude_bin_boundaries indices_in_bin bin_size
+            end
+
+            amplitude_bin_boundaries(:,1) = linspace(ci_95(1),ci_95(2)-bin_width,bin_oversampling*par.resp_phases); % bin starts
+            amplitude_bin_boundaries(:,2) = min([amplitude_bin_boundaries(:,1)+bin_width,amplitude_bin_boundaries*0+ci_95(2)],[],2);                                % bin ends
+
+            for i=1:size(amplitude_bin_boundaries,1)
+                indices_in_bin{i}=amplitudes(:)>=amplitude_bin_boundaries(i,1) & amplitudes(:)<amplitude_bin_boundaries(i,2);
+                bin_size(i)=sum(indices_in_bin{i});
+            end
+
+
+            [n_readouts,largest_bin]=max(bin_size);
+        end
+        
+        amplitude_bin_boundaries = amplitude_bin_boundaries(largest_bin,:);
+        index=index(amplitudes(:) >= amplitude_bin_boundaries(1) &  amplitudes(:) <= amplitude_bin_boundaries(2));
+
+        figure,plot(par.surrogate_signal,'b');
+        hold on;
+        plot(1:length(par.surrogate_signal),repmat(amplitude_bin_boundaries(1),1,length(par.surrogate_signal)),'r');
+        hold on;
+        plot(1:length(par.surrogate_signal),repmat(amplitude_bin_boundaries(2),1,length(par.surrogate_signal)),'r');
+        hold on;
+        plot(1:length(par.surrogate_signal),repmat(ci_95(1),1,length(par.surrogate_signal)),'g');
+        hold on;
+        plot(1:length(par.surrogate_signal),repmat(ci_95(2),1,length(par.surrogate_signal)),'g');
+
+        ylabel('Motion magnitude [a.u.]');
+        xlabel('Time [a.u.]');
+        legend('Surrogate signal','Selected bin begin','Selected bin end','90% confidence interval');
+        set_paper_plot_export;
+        set_figure_fullscreen;
+        
+    else
         error('>>Wrong input for par.binning_strategy \n');
     end

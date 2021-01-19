@@ -7,6 +7,8 @@ function even_integer=make_even(input)
 
     if mod(input,2)~=0
         even_integer = input - 1 ;
+    else
+        even_integer = input;
     end
     
 end
