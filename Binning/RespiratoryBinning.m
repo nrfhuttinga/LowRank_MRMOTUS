@@ -177,7 +177,7 @@ function [index,phase] = RespiratoryBinning(par)
 
         ylabel('Motion magnitude [a.u.]');
         xlabel('Time [a.u.]');
-        legend('Surrogate signal','Selected bin begin','Selected bin end','90% confidence interval');
+        legend('Surrogate signal','Selected bin begin','Selected bin end','Search window');
         set_paper_plot_export;
         set_figure_fullscreen;
         

@@ -37,14 +37,23 @@ function ReferenceImage =  ReconstructRefImage(DataStruct,parameters)
     
     parameters      = set_default(parameters,'recon_overgridding',2);
     parameters      = set_default(parameters,'ImDims',80);
+    parameters      = set_default(parameters,'center_out_traj',0);
 
+    
     parameters.bart = set_default(parameters.bart,'iterations',550);
     parameters.bart = set_default(parameters.bart,'version',6);
     parameters.bart = set_default(parameters.bart,'regularization_lambda',0.00033);
     
     NumberOfSpatialDims = size(DataStruct.Coordinates,1);
 
-    indices_on_readouts = Crop1D(size(DataStruct.RawKspaceData,1),parameters.readout_downsampling);
+    
+    if parameters.center_out_traj
+        indices_on_readouts = 1:numel(Crop1D(size(DataStruct.Coordinates,2),parameters.readout_downsampling));
+    else
+        indices_on_readouts = Crop1D(size(DataStruct.Coordinates,2),parameters.readout_downsampling);
+    end
+        
+        
     ImDimsOvergridding = make_even(parameters.ImDims * parameters.recon_overgridding);
    
  
@@ -86,7 +95,7 @@ function ReferenceImage =  ReconstructRefImage(DataStruct,parameters)
 
     ReferenceImage = reshape_to_square(reshape(crop_boundary(reshape_to_square(double(xstar),NumberOfSpatialDims),ones(1,NumberOfSpatialDims)*parameters.ImDims),[],1),NumberOfSpatialDims);
     disp('+Done')
-    slicer5d(imadjust3(ReferenceImage))
+    slicer5d(ReferenceImage)
 
 
 end
