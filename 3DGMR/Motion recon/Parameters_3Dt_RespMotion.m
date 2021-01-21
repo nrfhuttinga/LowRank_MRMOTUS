@@ -6,10 +6,10 @@
 
 
 % Specify where data can be found, and recons should be exported
-base_path                                   = ['/nfs/arch11/researchData/USER/nhutting/code/ForLowRankPaper/3DGMR/'];
-    export_folder                           = [base_path,'Exports/'];
-    highres_referenceimage_path             = [base_path,'Data/HighresReferenceImage.mat'];
-    DataStruct_path                         = [base_path,'Data/DataStruct_processed.mat'];
+base_path                                   = ['/nfs/arch11/researchData/USER/nhutting/code/LowRank_MRMOTUS/'];
+    export_folder                           = [base_path,'3DGMR/Exports/'];
+    highres_referenceimage_path             = [base_path,'Data/3DGMR/HighresReferenceImage.mat'];
+    DataStruct_path                         = [base_path,'Data/3DGMR/DataStruct_processed.mat'];
 
 % Specify which data to extract for the recon
 param_struct.RespResolvedReconstruction     = 1;            % 0 - time-resolved recon; 1: resp-resolved recon
@@ -19,14 +19,12 @@ param_struct.ReadoutsPerDynamic             = 20;           % Number of readouts
 
 
 % Specify reconstruction parameters
-param_struct.lambda_det                     = 0*1;          % Jacobian determinant regularization parameter
-param_struct.lambda_TV                      = 10e-7;        % TV regularization parameter
+param_struct.lambda_det                     = 0;            % Jacobian determinant regularization parameter
+param_struct.lambda_TV                      = 5e-7;         % TV regularization parameter
 param_struct.eps_TV                         = 1e1;          % epsilon for smooth TV approximation
 param_struct.ParallelComputationFlag        = 1;            % Parallel computations or not [0 / 1]
     param_struct.NumberOfThreads            = 4;            % Number of threads used in parallel pool
-    param_struct.ParallelRegularizationFlag = 0;            % Perform regularization evaluation and gradient computation in parallel.
-    % WARNING: if you set ParallelRegularizationFlag to 1 this may use a lot of RAM; MATLAB makes internal an internal copy per thread of all parameters required to evaluate the regularization functionals
-param_struct.NumberOfReconIterations        = 40;           % Number of iterations in reconstruction
+param_struct.NumberOfReconIterations        = 60;           % Number of iterations in reconstruction
 param_struct.lbfgs_termination_threshold    = 5e11;         % Threshold for reconstructions (higher threshold = lower accuracy = earlier stopping)
 param_struct.PreconditionParam              = 1/2;          % Power to which to raise the precondition matrix (don't touch)
 param_struct.NumberOfComponents             = 1;            % Number of components in the low-rank motion model

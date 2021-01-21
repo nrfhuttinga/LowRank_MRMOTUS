@@ -1,11 +1,20 @@
 function [imgs_out,cm] = MotionImageOverlay_2Dt(Images,motionFields,varargin)
     % Inputs: 
-    %   - Image:                 2d+t images used to overlay motionField
-    %   - motionFields{t}(:,:,1) :  motionFields in horizontal direction at time t; 
-    %                            left is negative, right is positive
-    %   - motionFields{t}(:,:,2):   motionFields in vertical direction at time t; 
-    %                            top is postive, bottom is negative 
-    %   - For images: 3rd dimension is animated
+    %   - Image:                    :   N x N x T 2d+t images used to overlay motionFields on
+    %   - motionFields{t}(:,:,1)    :   motionFields in horizontal direction at time t; 
+    %                                   left is negative, right is positive
+    %   - motionFields{t}(:,:,2)    :   motionFields in vertical direction at time t; 
+    %                                   top is postive, bottom is negative 
+    %   - dimension                 :   index of spatial dimension along which to select motion-fields for visualization [1/2/3]
+    %   - slice                     :   slice to select along 'dimension'
+    %   - varargin{1}               :   threshold for visualization
+    %   - varargin{2}               :   downsampling of motion-fields for visualization
+    %   - varargin{3}               :   color of the motion-field vectors
+    %   - varargin{4}               :   padding to remove on the boundary of the motion-fields [arrow heads should not go outside 'Images']
+    %   - varargin{5}               :   motion-field scaling factor for visualization
+    %   - varargin{6}               :   number of rotations counterclockwise for visualization
+    %   - varargin{7}               :   binary 2D visualization mask corresponding to the 'slice' selected in 'dimension'
+    %
     % Outputs:
     %   - cells with images and colormaps
     %
@@ -69,7 +78,7 @@ function [imgs_out,cm] = MotionImageOverlay_2Dt(Images,motionFields,varargin)
     end
     set(gcf,'Color','w')
 
-    maskk=rot90(maskk);
+
     if rotations == 1 % counterclockwise
         % x -> y
         % y -> -x
@@ -114,7 +123,6 @@ function [imgs_out,cm] = MotionImageOverlay_2Dt(Images,motionFields,varargin)
 
 
         for i=1:dynamics
-    %         mf_old = motionFields{i};
             mf_new(:,:,:,1)=-motionFields{i}(:,:,2);
             mf_new(:,:,:,2)=motionFields{i}(:,:,1);
             motionFields{i}=rot90(mf_new,rotations);

@@ -15,7 +15,7 @@ for i=1:nargin
 
         val_str = num2str(varargin{i}(1));
         for j=2:numel(varargin{i})
-            val_str = [val_str,',',num2str(varargin{i}(j))]
+            val_str = [val_str,',',num2str(varargin{i}(j))];
         end
     else
         val_str = varargin{i};

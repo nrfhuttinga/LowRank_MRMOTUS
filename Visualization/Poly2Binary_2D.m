@@ -5,7 +5,7 @@ if nargin<2
 end
 
 
-figure;imagesc(abs(image)); axis image;set_figure_fullscreen;drawnow;
+figure;imagesc(abs(image)); axis image;title('Draw a mask by clicking in the image');set_figure_fullscreen;drawnow;
 
 switch shape
     case 'poly'

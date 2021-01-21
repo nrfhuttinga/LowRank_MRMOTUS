@@ -1,10 +1,12 @@
-restoredefaultpath;addpath(genpath('/nfs/arch11/researchData/USER/nhutting/code/ForLowRankPaper'));
+restoredefaultpath;addpath(genpath('/nfs/arch11/researchData/USER/nhutting/code/LowRank_MRMOTUS'));
 close all;
 clear all;
 rng(1)
 
 
 %% load parameters and data
+
+disp('=== Loading parameters and data ===');
 
 % load parameters
 Parameters_3Dt_RespMotion
@@ -20,10 +22,16 @@ DataStruct.SelfNavigator.SurrogateSignal    = DataStruct.SelfNavigator.Surrogate
 
 %% check trajectory
 
+disp('=== Plotting trajectory ===');
+
+
 figure;PlotTrajectory(DataStruct.Coordinates(:,:,1:20))
 
 
 %% sort the data in case of respiratory-resolved reconstruction
+
+disp('=== Sorting data ===');
+
 
 if param_struct.RespResolvedReconstruction
     % perform phase binning
@@ -51,7 +59,7 @@ param_struct.IndicesOnReadout   = 1:size(DataStruct.RawKspaceData,1);
 
 svrs = structvars(param_struct);for i=1:size(svrs,1);eval(svrs(i,:));end
 RefImDims = size(DataStruct.ReferenceImage);
-export_suffix = generate_export_suffix(NumberOfDynamics,ReadoutsPerDynamic,BeginReadoutIdx,RespResolvedReconstruction,lambda_det,lambda_TV,eps_TV,LowRankReconstruction,NumberOfComponents,NumberOfSpatialSplines,NumberOfTemporalSplines,RefImDims);
+export_suffix = generate_export_suffix(NumberOfDynamics,ReadoutsPerDynamic,BeginReadoutIdx,RespResolvedReconstruction,lambda_det,lambda_TV,eps_TV,NumberOfComponents,NumberOfSpatialSplines,NumberOfTemporalSplines,RefImDims);
 
 %% Reshape the snapshot data and kspace coordinates according to specified parameters
 
@@ -109,7 +117,7 @@ disp('+Saving some reconstruction results...');
 save([export_folder,'dvf',export_suffix,'.mat'],'dvf','-v7.3')
 save([export_folder,'recon_info',export_suffix,'.mat'],'info');
 
-disp('=== Done! ===')     
+disp('+Done saving');
 
 
 %%  ==== Warping reference image with reconstructed motion-fields ======
@@ -128,32 +136,45 @@ N_vis = size(HighresReferenceImage,1);
 
 % Visualize the reference image that will be used for visualizations from
 % now on onwards
-slicer5d(abs(reshape(single(abs(HighresReferenceImage)),N_vis,N_vis)))
+slicer5d(abs(reshape(single(abs(HighresReferenceImage)),N_vis,N_vis,N_vis)));
 
 
 % Actual warping of the high-resolution reference image
 result = WarpReferenceImage(HighresReferenceImage,mf);
 disp('+Saving warped reference image');
 save([export_folder,'result',export_suffix,'.mat'],'dvf','-v7.3')
+disp('+Done saving');
 
 % Visualize warped reference image results
 slicer5d(permute(abs(result),[1 2 3 5 4]));
 
-disp('=== Done! ===')
+
+
+%%  set visualization handles
+
+crop_coronal        = @(x) x(:,10:end);
+crop_sagittal       = @(x) x(:,30:end-10);
+crop_transverse     = @(x) x(:,10:end);
+
+cor_slice = 67;
+sag_slice = 64;
+trans_slice = 64;
+
+handle_coronal      = @(x) rot90((squeeze(abs(x(cor_slice,:,:,:)))),1);
+handle_sagittal     = @(x) rot90((squeeze(abs(x(:,sag_slice,:,:)))),1);
+handle_transverse   = @(x) rot90((squeeze(abs(x(:,:,trans_slice,:)))),0);
 
 
 %% plot determinants
-
-
-disp('=== Performing validations on Jacobian determinants of motion-fields ===')
 
 % Computing determinants in batches at resolution of high-res reference image
 % 1) Compute determinants on low-res motion-fields
 % 2) Upscale resulting image to high-res ref image resolution
 clearvars det_rc
-parfor i=1:size(Psi,1)
-    det_rc(:,:,:,i)=imresize(single(DeterminantMotionFields(squeeze(mf(:,i)),0)),[N_vis,N_vis]);
+for i=1:size(Psi,1)
+    det_rc(:,:,:,i)=imresize3(single(DeterminantMotionFields(mf(:,:,i))),[N_vis,N_vis,N_vis]);
 end
+
 
 % Select indices to visualize determinant maps for
 [~,minimum_motion_index] = min(sum(abs(Psi),2),[],1);
@@ -168,49 +189,92 @@ alpha_ = 0.5;
 export = 1;
 image = HighresReferenceImage;
 
-% Visualization handles to specify e.g. crops and rotations if necessary
-visualization_handle_noabs = @(x) squeeze(x(:,45:end-30,:,:,:));
-visualization_handle_abs = @(x) abs(visualization_handle_noabs(x));
+ref_mask_path = [get_data_dir(DataStruct_path)];
+try
+    load([ref_mask_path,'/RefMask.mat']);
+catch
+    mask_coronal=Poly2Binary(handle_coronal(image));
+    mask_sagittal=Poly2Binary(handle_sagittal(image));
+    mask_transverse=Poly2Binary(handle_transverse(image));
+    save([ref_mask_path,'/RefMask.mat'],'mask_sagittal','mask_transverse','mask_coronal');
+end
 
 
-% Actual visualizations
+
 fig1=figure('Renderer', 'painters');
 set_background_black;
 set_figure_size(fig1,[0 0 1920 1100]);
-ha = tight_subplot(1,2,[.07 -0.40],[.1 .1],[.01 .01]);
-PlotOverlayedImage(visualization_handle_abs(image).*visualization_handle_abs(RefMask),visualization_handle_abs(max_ip_det).*visualization_handle_abs(RefMask),alpha_,ha(1),determinant_scale,0.16,1,.02);
-PlotOverlayedImage(visualization_handle_abs(image).*visualization_handle_abs(RefMask),visualization_handle_abs(min_ip_det).*visualization_handle_abs(RefMask),alpha_,ha(2),determinant_scale,0.16,0,.02);
+
+
+ha = tight_subplot(2,3,[.07 -.01],[.1 .1],[.22 .29]);
+
+
+% coronal
+PlotOverlayedImage( crop_coronal(handle_coronal(image).*mask_coronal),crop_coronal(handle_coronal(max_ip_det).*mask_coronal),alpha_,ha(1),determinant_scale,-0.02,1)
+PlotOverlayedImage( crop_sagittal(handle_sagittal(image).*mask_sagittal),crop_sagittal(handle_sagittal(max_ip_det).*mask_sagittal),alpha_,ha(2),determinant_scale)
+PlotOverlayedImage( crop_transverse(handle_transverse(image).*mask_transverse),crop_transverse(handle_transverse(max_ip_det).*mask_transverse),alpha_,ha(3),determinant_scale)
+
+PlotOverlayedImage( crop_coronal(handle_coronal(image).*mask_coronal),crop_coronal(handle_coronal(min_ip_det).*mask_coronal),alpha_,ha(4),determinant_scale,-0.02,1)
+PlotOverlayedImage( crop_sagittal(handle_sagittal(image).*mask_sagittal),crop_sagittal(handle_sagittal(min_ip_det).*mask_sagittal),alpha_,ha(5),determinant_scale)
+PlotOverlayedImage( crop_transverse(handle_transverse(image).*mask_transverse),crop_transverse(handle_transverse(min_ip_det).*mask_transverse),alpha_,ha(6),determinant_scale)
+
 
 % Save visualizations
 save_as = [export_folder,'ImageDetOverlayed',export_suffix];
 export_fig(save_as,'-png')
 
-disp('=== Done! ===')
 
-%% Motion image overlay 2Dt
-disp('=== Overlaying motion-fields on warped reference image ===')
+%% Motion image overlay 3Dt
+disp('=== Overlaying motion-fields on warped reference image... ===')
 
 % Upscale the motion-fields and apply the same visualization handles as for
 % the determinant visualization
 mf_highres = UpscaleMotionFields(mf,ImDim,N_vis);
-mf_highres = visualization_handle_noabs(reshape(mf_highres,N_vis,N_vis,NumberOfSpatialDims,param_struct.NumberOfDynamics));
 clearvars mf_new;
 max_for_gif = min(param_struct.NumberOfDynamics,800);
-for i=1:max_for_gif
-    for j=1:size(mf_highres,3)
-        mf_new{i}(:,:,j)=mf_highres(:,:,j,i);
-    end
+
+
+
+
+if HighresVisualizationFlag ==1
+    display_factor = 3;     % downsampling factor of motion-field for visualization
+else
+    display_factor = 1;     % downsampling factor of motion-field for visualization
+end
+threshold       = -10;      % threshold for visualization
+color           = 'g';      % color of motion-field
+padding         = 10;       % boundary to remove 
+scaling         = 1.3;      % scaling for visualizion
+
+% coronal
+dimension       = 1;
+slice           = cor_slice;
+rotations       = 1;
+[images_coronal,cm_coronal]=MotionImageOverlay_3Dt(result(:,:,:,:,1:max_for_gif),mf_highres,dimension,slice,threshold,display_factor,color,padding,scaling,rotations,mask_coronal);
+
+% sagittal
+dimension       = 2;
+slice           = sag_slice;
+rotations       = 1;
+[images_sagittal,cm_sagittal]=MotionImageOverlay_3Dt(result(:,:,:,:,1:max_for_gif),mf_highres,dimension,slice,threshold,display_factor,color,padding,scaling,rotations,mask_sagittal);
+
+% axial
+dimension       = 3;
+slice           = trans_slice;
+rotations       = 0;
+[images_axial,cm_axial]=MotionImageOverlay_3Dt(result(:,:,:,:,1:max_for_gif),mf_highres,dimension,slice,threshold,display_factor,color,padding,scaling,rotations,mask_transverse);
+
+close all;
+
+if databinning
+    delay_time = 4/no_dynamics;
+else
+    delay_time = cones_per_dynamic*U_processed.Sequence.Repetition_time;
 end
 
-% Overlay motion-fields as vector-field on warped reference images
-[a,b]=MotionImageOverlay_2Dt(visualization_handle_abs((abs(result(:,:,:,1:max_for_gif))).^(4/5)),mf_new,0,3,'g',10,1,0,rot90(visualization_handle_abs(RefMask),3));
 
-% Optionally add some text at the bottom per GIF to specify dynamics
-for i=1:param_struct.NumberOfDynamics;text_num{i}=[num2str(round(DataStruct.Sequence.Repetition_time*param_struct.ReadoutsPerDynamic*1000*(i-1))),' ms'];end
+for i=1:no_dynamics;text_num{i}=[num2str(round(4/20*1000*(i-1))),' ms'];end
 text_num = strjust(pad(text_num),'right');
-for i=1:param_struct.NumberOfDynamics;text{i} = ['  Time: ',text_num{i}];end
+for i=1:no_dynamics;text{i} = ['  Time: ',text_num{i}];end
 
-% Export resulting images as GIF
-CellsToGif(a,b,param_struct.ReadoutsPerDynamic*DataStruct.Sequence.Repetition_time,[export_folder,'/MotionImageOverlay',export_suffix,'.gif'],text)
 
-disp('=== Done! ===')

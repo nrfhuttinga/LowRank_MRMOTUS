@@ -28,11 +28,11 @@ function [ReferenceImage,Kdata]=CalibrateReferenceAndKdata(ReferenceImage,Kdata,
     % determine scaling due to data
     magn_data = double(max(abs(Kdata(:))));
     magn_data_target = 1;
-    scaling_data = 1 / magn_data * magn_data_target 
+    scaling_data = 1 / magn_data * magn_data_target ;
 
 
     % scaling due to inconsistency between motion field operator and kdata
-    scaling_operators       = double(mean(abs(Kdata(k0_index_on_readout:size(Kdata,1):end))) / magn_ref )
+    scaling_operators       = double(mean(abs(Kdata(k0_index_on_readout:size(Kdata,1):end))) / magn_ref );
 
 
     % resolve the scalings

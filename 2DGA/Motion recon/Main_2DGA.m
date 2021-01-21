@@ -1,10 +1,12 @@
-restoredefaultpath;addpath(genpath('/nfs/arch11/researchData/USER/nhutting/code/ForLowRankPaper'));
+restoredefaultpath;addpath(genpath('/nfs/arch11/researchData/USER/nhutting/code/LowRank_MRMOTUS'));
 close all;
 clear all;
 rng(1)
 
 
 %% load parameters and data
+
+disp('=== Loading parameters and data ===');
 
 % load parameters
 Parameters_2Dt_RespMotion
@@ -18,12 +20,18 @@ DataStruct.RawKspaceData                    = DataStruct.RawKspaceData(:,param_s
 DataStruct.Coordinates                      = DataStruct.Coordinates(:,:,param_struct.BeginReadoutIdx:end);
 DataStruct.SelfNavigator.SurrogateSignal    = DataStruct.SelfNavigator.SurrogateSignal(param_struct.BeginReadoutIdx:end);
 
+
 %% check trajectory
 
+disp('=== Plotting trajectory ===');
+
 figure;PlotTrajectory(DataStruct.Coordinates(:,:,1:20))
+ 
 
 
 %% sort the data in case of respiratory-resolved reconstruction
+
+disp('=== Sorting data ===');
 
 if param_struct.RespResolvedReconstruction
     % perform phase binning
@@ -43,6 +51,7 @@ if param_struct.RespResolvedReconstruction
     param_struct.NumberOfTemporalSplines    = round(4000/800); 
 end
 
+
 %% automatic parameters [don't touch]
 
 NumberOfSpatialDims             = size(DataStruct.Coordinates,1);                                                
@@ -51,7 +60,7 @@ param_struct.IndicesOnReadout   = 1:size(DataStruct.RawKspaceData,1);
 
 svrs = structvars(param_struct);for i=1:size(svrs,1);eval(svrs(i,:));end
 RefImDims = size(DataStruct.ReferenceImage);
-export_suffix = generate_export_suffix(NumberOfDynamics,ReadoutsPerDynamic,BeginReadoutIdx,RespResolvedReconstruction,lambda_det,lambda_TV,eps_TV,LowRankReconstruction,NumberOfComponents,NumberOfSpatialSplines,NumberOfTemporalSplines,RefImDims);
+export_suffix = generate_export_suffix(NumberOfDynamics,ReadoutsPerDynamic,BeginReadoutIdx,RespResolvedReconstruction,lambda_det,lambda_TV,eps_TV,NumberOfComponents,NumberOfSpatialSplines,NumberOfTemporalSplines,RefImDims);
 
 %% Reshape the snapshot data and kspace coordinates according to specified parameters
 
@@ -72,7 +81,7 @@ MRMOTUS_recon           = MRMOTUS_Operator((DataStruct.ReferenceImage(:)),permut
 
 % Handle to evaluate forward model and gradients at iterate 'x', this is
 % required for lbfgs
-f_handle = @(x) MRMOTUS_recon.forward_and_gradient_multidynamic(x,DataStruct.RawKspaceData);
+f_handle = @(x) MRMOTUS_recon.forward_and_gradient_lowrank(x,DataStruct.RawKspaceData);
 
       
 
@@ -128,7 +137,7 @@ N_vis = size(HighresReferenceImage,1);
 
 % Visualize the reference image that will be used for visualizations from
 % now on onwards
-slicer5d(abs(reshape(single(abs(HighresReferenceImage)),N_vis,N_vis)))
+slicer5d(abs(reshape(single(abs(HighresReferenceImage)),N_vis,N_vis)));
 
 
 % Actual warping of the high-resolution reference image
@@ -139,7 +148,6 @@ save([export_folder,'result',export_suffix,'.mat'],'dvf','-v7.3')
 % Visualize warped reference image results
 slicer5d(permute(abs(result),[1 2 3 5 4]));
 
-disp('=== Done! ===')
 
 
 %% plot determinants
@@ -152,7 +160,7 @@ disp('=== Performing validations on Jacobian determinants of motion-fields ===')
 % 2) Upscale resulting image to high-res ref image resolution
 clearvars det_rc
 parfor i=1:size(Psi,1)
-    det_rc(:,:,:,i)=imresize(single(DeterminantMotionFields(squeeze(mf(:,i)),0)),[N_vis,N_vis]);
+    det_rc(:,:,:,i)=imresize(single(DeterminantMotionFields(squeeze(mf(:,:,i)),0)),[N_vis,N_vis]);
 end
 
 % Select indices to visualize determinant maps for
@@ -169,9 +177,16 @@ export = 1;
 image = HighresReferenceImage;
 
 % Visualization handles to specify e.g. crops and rotations if necessary
-visualization_handle_noabs = @(x) squeeze(x(:,45:end-30,:,:,:));
+visualization_handle_noabs = @(x) squeeze(x(:,25:end-25,:,:,:));
 visualization_handle_abs = @(x) abs(visualization_handle_noabs(x));
 
+ref_mask_path = [get_data_dir(DataStruct_path),'RefMask.mat'];
+if exist(ref_mask_path)>0
+    load(ref_mask_path);
+else
+    RefMask = Poly2Binary(image);
+    save(ref_mask_path,'RefMask','-v7.3');
+end
 
 % Actual visualizations
 fig1=figure('Renderer', 'painters');
@@ -185,10 +200,9 @@ PlotOverlayedImage(visualization_handle_abs(image).*visualization_handle_abs(Ref
 save_as = [export_folder,'ImageDetOverlayed',export_suffix];
 export_fig(save_as,'-png')
 
-disp('=== Done! ===')
 
 %% Motion image overlay 2Dt
-disp('=== Overlaying motion-fields on warped reference image ===')
+disp('=== Overlaying motion-fields on warped reference image... ===')
 
 % Upscale the motion-fields and apply the same visualization handles as for
 % the determinant visualization

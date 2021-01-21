@@ -336,7 +336,7 @@ classdef MRMOTUS_Operator
                         subplot(4,3,3);plot(MotionFieldCoefficients{1}(:));title('Spline coefficients')
 
                         for i=0:min(5,obj.param_struct.NumberOfComponents-1)
-                            subplot(4,3,4+i);imagesc(rot90(squeeze(vis(:,:,:,i+1)),0));axis image;colormap gray; axis off;colorbar;title('Spatial component 1 - Sagittal')
+                            subplot(4,3,4+i);imagesc(rot90(squeeze(vis(:,:,:,i+1)),0));axis image;colormap gray; axis off;colorbar;title(['Spatial component ',num2str(i+1)])
                         end
 
                     end
@@ -409,14 +409,10 @@ classdef MRMOTUS_Operator
             obj.static_reg_struct.ImDims                    = obj.ImDims;
             obj.static_reg_struct.NumberOfSpatialDims       = obj.NumberOfSpatialDims;
             obj.static_reg_struct.referenceImageMask        = obj.referenceImageMask;
-            obj.static_reg_struct.referenceImage            = denorm(abs(obj.ReferenceImage(:,1)).*(obj.referenceImageMask(:));%abs(obj.ReferenceImage)>3.8e-5 & obj.referenceImageMask;%0.12;% ;%0.0025;%ones(numel(obj.ReferenceImage),1);%.0025;;%
+            obj.static_reg_struct.referenceImage            = denorm(abs(obj.ReferenceImage(:,1)).*(obj.referenceImageMask(:)));%abs(obj.ReferenceImage)>3.8e-5 & obj.referenceImageMask;%0.12;% ;%0.0025;%ones(numel(obj.ReferenceImage),1);%.0025;;%
   
             no_threads=obj.param_struct.NumberOfThreads;
-%             if obj.RegularizationOptions.Types.Determinant.Lambda>0 && obj.NumberOfSpatialDims==3
-%                 parallel_reg =0;
-%             else
-            parallel_reg = 1;%obj.param_struct.ParallelRegularizationFlag;
-%             end
+            parallel_reg = 1;
             pool=gcp('nocreate');
             if obj.param_struct.ParallelComputationFlag 
                 
@@ -562,25 +558,21 @@ classdef MRMOTUS_Operator
             
             disp('+Initializing solution variables...');
 
-                        
-            if obj.param_struct.LowRankReconstruction
-                obj.Ncoefficients_spatial = size(obj.SpatialBasis,2)*obj.NumberOfSpatialDims*obj.param_struct.NumberOfComponents;
-                obj.Ncoefficients_temporal = size(obj.TemporalBasis,2)*obj.param_struct.NumberOfComponents;
+
+            obj.Ncoefficients_spatial = size(obj.SpatialBasis,2)*obj.NumberOfSpatialDims*obj.param_struct.NumberOfComponents;
+            obj.Ncoefficients_temporal = size(obj.TemporalBasis,2)*obj.param_struct.NumberOfComponents;
 
 
-                PhiCoefficients_0 = reshape(rand([obj.Ncoefficients_spatial,1])-0.5,[],obj.param_struct.NumberOfComponents);
-                PsiCoefficients_0 = reshape(rand([obj.Ncoefficients_temporal,1])-0.5,[],obj.param_struct.NumberOfComponents);
+            PhiCoefficients_0 = reshape(rand([obj.Ncoefficients_spatial,1])-0.5,[],obj.param_struct.NumberOfComponents);
+            PsiCoefficients_0 = reshape(rand([obj.Ncoefficients_temporal,1])-0.5,[],obj.param_struct.NumberOfComponents);
 
-                PhiCoefficients_0 = PhiCoefficients_0/norm(PhiCoefficients_0,'fro');
-                PsiCoefficients_0 = PsiCoefficients_0/norm(PsiCoefficients_0,'fro');
+            PhiCoefficients_0 = PhiCoefficients_0/norm(PhiCoefficients_0,'fro');
+            PsiCoefficients_0 = PsiCoefficients_0/norm(PsiCoefficients_0,'fro');
 
-                obj.SolutionVariables_init = [PhiCoefficients_0(:);PsiCoefficients_0(:)];
+            obj.SolutionVariables_init = [PhiCoefficients_0(:);PsiCoefficients_0(:)];
             
-            else
                 
-                obj.SolutionVariables_init = reshape((rand(size(obj.SpatialBasis,2),obj.param_struct.NumberOfSpatialDims,obj.param_struct.NumberOfDynamics)-0.5)/100,[],1);
             
-            end
 
         end
         
@@ -734,7 +726,7 @@ classdef MRMOTUS_Operator
                         size_motionfield_coeff = size(MotionField);
                         MotionField = reshape(MotionField,size(MotionField,1),[]);
                         
-                        [regularizationEnergy,regularizationGradient]   = vectorial_tv_operator(MotionField,RegularizationOptions.Types.(reg_types{i}).Eps,static_struct.ImDims*ones(1,static_struct.NumberOfSpatialDims),RegularizationOptions.GridSpacing,RegularizationOptions.Types.(reg_types{i}).D.Value);
+                        [regularizationEnergy,regularizationGradient]   = vectorial_tv_operator(MotionField,RegularizationOptions.Types.(reg_types{i}).Eps,RegularizationOptions.Types.(reg_types{i}).D.Value);
                         ObjfuncValDynamic                               = ObjfuncValDynamic   + RegularizationOptions.Types.(reg_types{i}).Lambda * regularizationEnergy;
 
                         GradientDynamic = GradientDynamic  +  RegularizationOptions.Types.(reg_types{i}).Lambda * reshape(regularizationGradient,size_motionfield_coeff);
