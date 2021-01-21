@@ -1,4 +1,4 @@
 *.mat
 Data/
 *.m~
-**/Exports/
+**/Exports/**
