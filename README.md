@@ -5,7 +5,12 @@ This repository contains code to perform low-rank MR-MOTUS reconstructions simil
 ### Requirements
 The code relies on non-uniform FFT computations with the [FINUFFT toolbox](https://github.com/flatironinstitute/finufft) by Alex H Barnett et al, and a [MATLAB L-BFGS-B-C wrapper](https://github.com/stephenbeckr/L-BFGS-B-C) by Stephen Becker. Both toolboxes are provided in this repository with Linux precompiled MEX-files. It may be necessary to recompile these toolboxes depending on your system.
 
-## Reconstruction examples
+# Data
+### Raw data
+
+### Preprocessed data
+
+# Reconstruction examples
 
 ### 2D+t reconstruction example
 To perform a 2D+t low-rank MR-MOTUS reconstruction on the 2D golden-angle (2DGA) radial data, run
@@ -21,7 +26,7 @@ run('3DGMR/Motion recon/Main_3DGMR.m')
 ```
 This script relies on all parameters and paths set in "3DGMR/Motion recon/Parameters_3Dt_RespMotion.m", make sure these are set correctly.
 
-## Complete processing pipeline examples: from raw data to motion-field reconstruction
+# Complete processing pipeline examples: from raw data to motion-field reconstruction
 The following steps are typically perform from raw acquired k-space data to motion-field reconstructions
 
 1. Load data into Matlab
