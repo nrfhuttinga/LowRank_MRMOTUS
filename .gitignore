@@ -2,3 +2,4 @@
 Data/
 *.m~
 **/Exports/**
+**DS_Store
