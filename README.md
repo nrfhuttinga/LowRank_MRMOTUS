@@ -5,9 +5,12 @@ This repository contains code to perform low-rank MR-MOTUS reconstructions simil
 ### Requirements
 The code relies on non-uniform FFT computations with the [FINUFFT toolbox](https://github.com/flatironinstitute/finufft) by Alex H Barnett et al, and a [MATLAB L-BFGS-B-C wrapper](https://github.com/stephenbeckr/L-BFGS-B-C) by Stephen Becker. Both toolboxes are provided in this repository with Linux precompiled MEX-files. It may be necessary to recompile these toolboxes depending on your system.
 
+## Processing pipeline
+
+## Reconstruction examples
 
 ### 2D+t reconstructions
 To perform a reconstruction on the 2D golden-angle data, run 'Main_2DGA.m'.
-
+``` '''
 ### 3D+t reconstructions
 
