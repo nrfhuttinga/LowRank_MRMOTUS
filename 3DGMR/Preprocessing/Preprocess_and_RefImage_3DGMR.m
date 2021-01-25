@@ -5,7 +5,7 @@
 
 clear all;
 
-lowrank_mrmotuspath = '/nfs/arch11/researchData/USER/nhutting/code/LowRank_MRMOTUS/';
+lowrank_mrmotuspath = '../LowRank_MRMOTUS/';
 cd(lowrank_mrmotuspath)
 addpath(genpath(pwd));
 

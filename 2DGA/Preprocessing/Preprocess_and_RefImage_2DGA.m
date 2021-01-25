@@ -5,7 +5,7 @@
 
 clear all;
 
-lowrank_mrmotuspath = '/nfs/arch11/researchData/USER/nhutting/code/LowRank_MRMOTUS/';
+lowrank_mrmotuspath = '../LowRank_MRMOTUS/';
 cd(lowrank_mrmotuspath)
 addpath(genpath(pwd));
 
@@ -43,7 +43,7 @@ total_readouts                  = 700:size(DataStruct_processed.RawKspaceData,2)
 % parameters specify for bart
 ref_im_parameters.bart.iterations               = 500;                                  % Number of iterations
 ref_im_parameters.bart.regularization_lambda    = .0005;                                % L1-Wavelet regularization parameter
-ref_im_parameters.bart.version                  = 6;                                    % BART version [required because there is a slight change in commands over the versions]
+ref_im_parameters.bart.version                  = 4;                                    % BART version [required because there is a slight change in commands over the versions]
 
 
 % parameters for binning
@@ -68,7 +68,7 @@ DataStruct_processed.RawKspaceData    = DataStruct_processed.RawKspaceData(:,tot
 
 
 %% 3) Estimate coil compression coefficients for linear homogeneous coil compression
-
+% As explained in Supporting information 2: "Extension of MR-MOTUS to multi-coil acquisitions"
 disp('+Computing coil combination coefficients');
 
 % Set region to optimize the homogeneity on
