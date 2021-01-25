@@ -1,5 +1,6 @@
 *.mat
 Data/
 *.m~
-*/Exports/*
+2DGA/Exports/*
+3DGMR/Exports/*
 **DS_Store
