@@ -6,7 +6,7 @@
 
 
 % Specify where data can be found, and recons should be exported
-base_path                                   = ['/nfs/arch11/researchData/USER/nhutting/code/LowRank_MRMOTUS/'];
+base_path                                   = ['../LowRank_MRMOTUS/'];
     export_folder                           = [base_path,'3DGMR/Exports/'];
     highres_referenceimage_path             = [base_path,'Data/3DGMR/HighresReferenceImage.mat'];
     DataStruct_path                         = [base_path,'Data/3DGMR/DataStruct_processed.mat'];
