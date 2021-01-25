@@ -5,7 +5,7 @@
 
 
 % Specify where data can be found, and recons should be exported
-base_path                                   = ['/nfs/arch11/researchData/USER/nhutting/code/LowRank_MRMOTUS/'];
+base_path                                   = ['../LowRank_MRMOTUS/']; % TBedit: easier path specification
     export_folder                           = [base_path,'2DGA/Exports/'];
     highres_referenceimage_path             = [base_path,'Data/2DGA/HighresReferenceImage.mat'];
     DataStruct_path                         = [base_path,'Data/2DGA/DataStruct_processed.mat'];

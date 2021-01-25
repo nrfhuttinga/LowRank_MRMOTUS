@@ -1,4 +1,4 @@
-restoredefaultpath;addpath(genpath('/nfs/arch11/researchData/USER/nhutting/code/LowRank_MRMOTUS'));
+restoredefaultpath;addpath(genpath('../LowRank_MRMOTUS'));
 close all;
 clear all;
 rng(1)

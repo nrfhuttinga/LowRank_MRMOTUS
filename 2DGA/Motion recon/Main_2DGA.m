@@ -1,4 +1,4 @@
-restoredefaultpath;addpath(genpath('/nfs/arch11/researchData/USER/nhutting/code/LowRank_MRMOTUS'));
+restoredefaultpath;addpath(genpath('../LowRank_MRMOTUS')); % TB edit: this is easier for people that download the repo
 close all;
 clear all;
 rng(1)
@@ -11,6 +11,7 @@ disp('=== Loading parameters and data ===');
 % load parameters
 Parameters_2Dt_RespMotion
 
+% Load reference image, self-navigation signal, k-space data and k-space trajectory
 load(DataStruct_path)
 
 [DataStruct.ReferenceImage,DataStruct.RawKspaceData] = CalibrateReferenceAndKdata(DataStruct.ReferenceImage,DataStruct.RawKspaceData,round(size(DataStruct.RawKspaceData,1)/2+1));
