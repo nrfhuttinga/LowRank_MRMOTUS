@@ -20,10 +20,10 @@ load([data_folder,'DataStruct_raw.mat']);
 %
 %       .RawKspaceData                          -> [ #readoutsamples    #readouts        1          #coils  ]           % Raw k-space data
 %       .Coordinates                            -> [ 2/3                #readoutsamples  #readouts ]                    % K-space trajectory coordinates
-%       .Coils          
+%       .Coils
 %           .Sensitivities                      -> [ ImDims             ImDims           ImDims     #coils  ]           % Coil sensitivities estimates with espirit
 %           .Noise_covariance                   -> [ #coils             #coils ]                                        % Noise covariance matrix between the channels [set to identity if not available]
-%       [.SelfNavigator.SurrogateSignal]        -> [ #readouts ]                                                        % Respiratory surrogate signal, you can provide your own               
+%       [.SelfNavigator.SurrogateSignal]        -> [ #readouts ]                                                        % Respiratory surrogate signal, you can provide your own
 
 
 DataStruct_processed = DataStruct;
@@ -31,14 +31,7 @@ DataStruct_processed = DataStruct;
 
 
 
-<<<<<<< HEAD
 %% 3) Cut the data according to 'ref_im_parameters.total_readouts'
-=======
-% parameters specify for bart
-ref_im_parameters.bart.iterations               = 500;                                  % Number of iterations
-ref_im_parameters.bart.regularization_lambda    = .0005;                                % L1-Wavelet regularization parameter
-ref_im_parameters.bart.version                  = 4;                                    % BART version [required because there is a slight change in commands over the versions]
->>>>>>> b0a1828ea3b782ce9df4e4a1928bf35bb2dcfa2f
 
 
 % Scale coordinates and extract proper readouts
@@ -51,11 +44,11 @@ DataStruct_processed.RawKspaceData    = DataStruct_processed.RawKspaceData(:,ref
 disp('+Computing coil combination coefficients');
 
 % Set region to optimize the homogeneity on
-sens_target = (sum(abs(DataStruct_processed.Coils.Sensitivities),4)>0)*1; 
+sens_target = (sum(abs(DataStruct_processed.Coils.Sensitivities),4)>0)*1;
 sens_target = sens_target(:);
 
 % Perform compression coefficients
-DataStruct_processed.Coils.CompressionCoefficients = HomogeneousCoilCompressionCoefficients(DataStruct_processed.Coils.Sensitivities,diag(diag(DataStruct_processed.Coils.Noise_covariance)),ref_im_parameters.lambda_cc,sens_target);         
+DataStruct_processed.Coils.CompressionCoefficients = HomogeneousCoilCompressionCoefficients(DataStruct_processed.Coils.Sensitivities,diag(diag(DataStruct_processed.Coils.Noise_covariance)),ref_im_parameters.lambda_cc,sens_target);
 
 
 %% 4) Extract surrogate from spokes [if required]
@@ -99,7 +92,7 @@ HighresReferenceImage                           = ReconstructRefImage( DataStruc
 
 
 % Register both images;
-% Otherwise upscaled motion-fields reconstructed with a low-res ref image will not have 
+% Otherwise upscaled motion-fields reconstructed with a low-res ref image will not have
 % the same geometry as the high res reference image that will be used for visualziations
 disp('+Registering high-res reference image to low-res reference image');
 ReferenceImage_upscaled = imresize(abs(ReferenceImage),size(HighresReferenceImage));
