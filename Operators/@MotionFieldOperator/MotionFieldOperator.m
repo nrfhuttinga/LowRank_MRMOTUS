@@ -29,7 +29,7 @@ classdef MotionFieldOperator
             
             % Apply motion-fields to warp the grid
             for i=1:obj.NumberOfSpatialDimensions
-            for j=1:size(MotionFields,5)
+            for j=1:size(MotionFields,3)
                 obj.NewGrid(:,i,j) = ReferenceGrid(:,i)+squeeze(MotionFields(:,i,j));
             end
             end
@@ -40,9 +40,9 @@ classdef MotionFieldOperator
             finufft_options.chkbnds                     = 0;
             finufft_options.nthreads                    = 1;
             finufft_options.fftw                        = 1;
-            finufft_options.upsampfac                   = 2;
+            finufft_options.upsampfac                   = 1.25;
             finufft_options.kerevalmeth                 = 1;
-            finufft_options.eps                         = 1e-6;
+            finufft_options.eps                         = 1e-4;
             obj.NufftOptions = finufft_options;
 
             % Create function handles for convenience, you could replace
@@ -66,7 +66,7 @@ classdef MotionFieldOperator
                 s = zeros(size(obj.KspaceTrajectory,1),size(obj.KspaceTrajectory,3));
                 
                 if obj.NumberOfSpatialDimensions==3     % 3D
-                    for i=1:size(s,3)
+                    for i=1:size(s,2)
                         s(:,i) = obj.NufftFwdHandle(obj.KspaceTrajectory(:,:,i),obj.NewGrid(:,1,i),obj.NewGrid(:,2,i),obj.NewGrid(:,3,i),x(:,1));
                     end
                 

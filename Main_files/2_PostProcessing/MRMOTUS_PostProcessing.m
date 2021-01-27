@@ -45,6 +45,7 @@ end
 image_for_vis = HighresReferenceImage;
 
 ref_mask_path = [get_data_dir(param_struct.DataStruct_path)];
+if param_struct.postprocessing.JacDeterminantsFlag || param_struct.postprocessing.MotionImageOverlayFlag
 try
     load([ref_mask_path,'/RefMask.mat']);
 catch
@@ -57,6 +58,7 @@ catch
         RefMask = Poly2Binary(image_for_vis);
         save(ref_mask_path,'RefMask','-v7.3');
     end
+end
 end
 
 %% Jacobian determinants

@@ -13,6 +13,8 @@ function image=ForceSquareShape(image)
             warning('Reshaped image to 2D square');
             image = reshape_to_square(image,2);
         end
+    else
+        image=image;
     end
 
 end

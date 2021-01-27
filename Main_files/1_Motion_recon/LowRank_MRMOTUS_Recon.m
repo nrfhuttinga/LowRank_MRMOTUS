@@ -16,7 +16,7 @@ function [Phi,Psi,MRMOTUS_recon,export_suffix]=LowRank_MRMOTUS_Recon(DataStruct_
 
 
 
-[DataStruct_processed.ReferenceImage,DataStruct_processed.RawKspaceData] = CalibrateReferenceAndKdata(DataStruct_processed.ReferenceImage,DataStruct_processed.RawKspaceData,round(size(DataStruct_processed.RawKspaceData,1)/2+1));
+[DataStruct_processed.ReferenceImage,DataStruct_processed.RawKspaceData] = CalibrateReferenceAndKdata(DataStruct_processed.ReferenceImage,DataStruct_processed.RawKspaceData,DataStruct_processed.Coordinates,param_struct);
 
 
 DataStruct_processed.RawKspaceData                    = DataStruct_processed.RawKspaceData(:,param_struct.BeginReadoutIdx:end,:,:);

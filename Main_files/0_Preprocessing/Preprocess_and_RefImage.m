@@ -105,7 +105,7 @@ if NumberOfSpatialDims==2
 else
     ReferenceImage_upscaled = imresize3(abs(ReferenceImage),size(HighresReferenceImage));
 end
-[opt,metric]=imregconfig('multimodal');opt.MaximumIterations = 500;
+[opt,metric]=imregconfig('multimodal');opt.MaximumIterations = 700;
 tform=imregtform(demax(abs(HighresReferenceImage)),demax(ReferenceImage_upscaled),'similarity',opt,metric,'DisplayOptimization',1);
 disp('+Applying registration results');
 if NumberOfSpatialDims==2
