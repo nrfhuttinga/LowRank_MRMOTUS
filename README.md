@@ -67,7 +67,7 @@ For the 2D golden-angle data, the complete pipeline can be performed as
 run('3DGMR/Preprocessing/Preprocess_and_RefImage_3DGMR.m')  # perform steps 1-7
 run('3DGMR/Motion recon/Main_3DGMR.m')                      # preform step 8
 ```
-Make sure all paths and parameters in the beginning of "2DGA/Preprocessing/Preprocess_and_RefImage_3DGMR.m" and "3DGMR/Motion recon/Parameters_3Dt_RespMotion.m" are set correctly.
+Make sure all paths and parameters in the beginning of "2DGA/Preprocessing/Preprocess_and_RefImage_3DGMR.m" and "3DGMR/Motion recon/Parameters_3Dt_RespMotion.m" are set correctly. Note: these reconstructions may take around 30 minutes, depending on your computing power. It is therefore recommended to experiment with 2D reconstructions.
 
 # Running reconstructions on your own code
 1. To run this code on your own data all raw data should first be stored in a `struct` 'DataStruct', with the following structure:
