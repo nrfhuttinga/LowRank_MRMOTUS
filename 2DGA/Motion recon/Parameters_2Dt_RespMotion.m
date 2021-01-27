@@ -27,7 +27,7 @@ param_struct.ParallelComputationFlag        = 0;            % parallel computati
 param_struct.NumberOfReconIterations        = 60;           % Number of iterations in reconstruction
 param_struct.lbfgs_termination_threshold    = 10e11;         % Threshold for reconstructions (higher threshold = lower accuracy = earlier stopping)
 param_struct.PreconditionParam              = 1/2;          % Power to which to raise the precondition matrix (don't touch)
-param_struct.NumberOfComponents             = 5;            % Number of components in the low-rank motion model
+param_struct.NumberOfComponents             = 3;            % Number of components in the low-rank motion model
 
     
 % Parameters for the spline bases

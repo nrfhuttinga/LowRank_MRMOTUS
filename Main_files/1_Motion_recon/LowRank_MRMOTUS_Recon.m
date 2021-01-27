@@ -25,7 +25,7 @@ DataStruct_processed.SelfNavigator.SurrogateSignal    = DataStruct_processed.Sel
 
  % Check trajectory
 disp('=== Plotting trajectory ===');
-figure;PlotTrajectory(DataStruct.Coordinates(:,:,1:20))
+figure;PlotTrajectory(DataStruct_processed.Coordinates(:,:,1:20))
 
 
 %% sort the data in case of respiratory-resolved reconstruction
