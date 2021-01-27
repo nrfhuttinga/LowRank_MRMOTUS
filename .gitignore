@@ -1,6 +1,6 @@
 Data/3DGMR/*
 Data/2DGA/DataStruct_raw.mat
 *.m~
-**Exports/**
+**/Exports/**
 **DS_Store
 *CLimRange.mat
