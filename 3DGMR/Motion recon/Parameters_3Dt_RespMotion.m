@@ -7,15 +7,15 @@
 
 % Specify where data can be found, and recons should be exported
 base_path                                   = ['../LowRank_MRMOTUS/'];
-    export_folder                           = [base_path,'3DGMR/Exports/'];
-    highres_referenceimage_path             = [base_path,'Data/3DGMR/HighresReferenceImage.mat'];
-    DataStruct_path                         = [base_path,'Data/3DGMR/DataStruct_processed.mat'];
+    param_struct.export_folder                           = [base_path,'3DGMR/Exports/'];
+    param_struct.highres_referenceimage_path             = [base_path,'Data/3DGMR/HighresReferenceImage.mat'];
+    param_struct.DataStruct_path                         = [base_path,'Data/3DGMR/DataStruct_processed.mat'];
 
 % Specify which data to extract for the recon
 param_struct.RespResolvedReconstruction     = 1;            % 0 - time-resolved recon; 1: resp-resolved recon
 param_struct.NumberOfDynamics               = 10;           % Total dynamics use for reconstructions (= number of respiratory phases in resp-resolved recon)
 param_struct.BeginReadoutIdx                = 1;            % From this readout and onwards the data will be used for the reconstruction
-param_struct.ReadoutsPerDynamic             = 20;           % Number of readouts per dynamic (will only be used for time-resolved recon)
+param_struct.ReadoutsPerDynamic             = 31;           % Number of readouts per dynamic (will only be used for time-resolved recon)
 
 
 % Specify reconstruction parameters

@@ -16,22 +16,31 @@ function [DataStruct_processed,HighresReferenceImage]=Preprocess_and_RefImage(Da
 
 DataStruct_processed = DataStruct_raw;
 
+if ~isfield(ref_im_parameters,'centerout_flag')
+    ref_im_parameters.centerout_flag = 0;
+end
 
-% Extract image dimensions of reference image from coordinates before we rescale them
-indices_on_readouts         = Crop1D(size(DataStruct_processed.RawKspaceData,1),ref_im_parameters.readout_downsampling);
-ref_im_parameters.ImDims    = make_even(round(max(reshape(sqrt(sum(DataStruct_processed.Coordinates(:,indices_on_readouts,:).^2,1)),[],1),[],1)*ref_im_parameters.vis_overgridding));
-ImDims_highres              = make_even(round(max(reshape(sqrt(sum(DataStruct_processed.Coordinates(:,:,:).^2,1)),[],1),[],1)*ref_im_parameters.vis_overgridding));
+if ~isfield(ref_im_parameters,'readout_downsampling_highres')
+    ref_im_parameters.readout_downsampling_highres = 1;
+end
+
+if ~isfield(DataStruct_raw.Coils,'Noise_covariance')
+    DataStruct_raw.Coils.Noise_covariance = eye(size(DataStruct_raw.Coils.Sensitivities,4),size(DataStruct_raw.Coils.Sensitivities,4));
+end
+
+
+%% Extract image dimensions of reference image from coordinates before we rescale them
+indices_on_readouts         = Crop1D(size(DataStruct_processed.RawKspaceData,1),ref_im_parameters.readout_downsampling,ref_im_parameters.centerout_flag);
+indices_on_readouts_highres = Crop1D(size(DataStruct_processed.RawKspaceData,1),ref_im_parameters.readout_downsampling_highres,ref_im_parameters.centerout_flag);
+
+ref_im_parameters.ImDims    = make_even(round(max(reshape(sqrt(sum(DataStruct_processed.Coordinates(:,indices_on_readouts,:).^2,1)),[],1),[],1)));
+ImDims_highres              = make_even(round(max(reshape(sqrt(sum(DataStruct_processed.Coordinates(:,indices_on_readouts_highres,:).^2,1)),[],1),[],1)));
+
 NumberOfSpatialDims         = size(DataStruct_processed.Coordinates,1);
 
-%% 3) Cut the data according to 'ref_im_parameters.total_readouts'
 
 
-% Scale coordinates and extract proper readouts
-DataStruct_processed.Coordinates      = double(demax(DataStruct_processed.Coordinates(:,:,ref_im_parameters.total_readouts))/2);
-DataStruct_processed.RawKspaceData    = double(DataStruct_processed.RawKspaceData(:,ref_im_parameters.total_readouts,:,:));
-
-
-%% 3) Estimate coil compression coefficients for linear homogeneous coil compression
+%% Estimate coil compression coefficients for linear homogeneous coil compression
 % As explained in Supporting information 2: "Extension of MR-MOTUS to multi-coil acquisitions"
 disp('+Computing coil combination coefficients');
 
@@ -43,16 +52,20 @@ sens_target = sens_target(:);
 DataStruct_processed.Coils.CompressionCoefficients = HomogeneousCoilCompressionCoefficients(DataStruct_processed.Coils.Sensitivities,diag(diag(DataStruct_processed.Coils.Noise_covariance)),ref_im_parameters.lambda_cc,sens_target);
 
 
-%% 4) Extract surrogate from spokes [if required]
+%% Extract surrogate from spokes [if required]
 
 if ~isfield(DataStruct_processed,'SelfNavigator')
-    surrogate_pars.k0_index = size(DataStruct_processed.RawKspaceData,1)/2+1;
+    if ref_im_parameters.centerout_flag==0
+        surrogate_pars.k0_index = size(DataStruct_processed.RawKspaceData,1)/2+1;
+    else
+        surrogate_pars.k0_index = 1;
+    end
     DataStruct_processed    = ExtractSurrogateSignal(DataStruct_processed,surrogate_pars);
 end
 
 
 
-%% 5) Binning
+%% Binning
 
 
 % Coil compress if not in PI mode
@@ -71,14 +84,14 @@ disp(['Extracted ',num2str(numel(ref_im_parameters.readout_indices_ref)),' spoke
 
 
 
-%% 6) Reconstruct two reference images: low-resolution for motion estimations, high-resolution for visualizations
+%% Reconstruct two reference images: low-resolution for motion estimations, high-resolution for visualizations
 
 % Reconstruct low-res ref image
 ReferenceImage = ReconstructRefImage( DataStruct_processed, ref_im_parameters);
 
 % Reconstruct high-res ref image
 highres_ref_im_parameters                       = ref_im_parameters;
-highres_ref_im_parameters.readout_downsampling  = 1;
+highres_ref_im_parameters.readout_downsampling  = ref_im_parameters.readout_downsampling_highres;
 highres_ref_im_parameters.ImDims                = ImDims_highres;
 HighresReferenceImage                           = ReconstructRefImage( DataStruct_processed, highres_ref_im_parameters);
 
@@ -105,15 +118,17 @@ if NumberOfSpatialDims==2
     figure;imagesc(abs(HighresReferenceImage_warped));axis image; axis off; colormap gray;title('High-res reference image');
     figure;imagesc(abs(ReferenceImage));axis image; axis off; colormap gray;title('Low-res reference image');
 else
-    slicer5d(imadjust3(HighresReferenceImage_warped));
-    slicer5d(imadjust3(ReferenceImage));
+    slicer5d((HighresReferenceImage_warped));
+    slicer5d((ReferenceImage));
 end
 
-%% 7) Summarize everything in the _processed struct
+%% Summarize everything in the _processed struct
 
 
 HighresReferenceImage                                   = HighresReferenceImage_warped;
-
+if ~isfield(DataStruct_processed.SelfNavigator,'LowpassFilterDelay')
+    DataStruct_processed.SelfNavigator.LowpassFilterDelay = 0;
+end
 DataStruct_processed.RawKspaceData                      = DataStruct_processed.RawKspaceData(indices_on_readouts,1: end-DataStruct_processed.SelfNavigator.LowpassFilterDelay,:,:);
 DataStruct_processed.Coordinates                        = DataStruct_processed.Coordinates(:,indices_on_readouts,1: end-DataStruct_processed.SelfNavigator.LowpassFilterDelay,:,:);
 DataStruct_processed.SelectedReadoutsReferenceImage     = ref_im_parameters.readout_indices_ref;

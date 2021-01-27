@@ -6,7 +6,7 @@ ref_im_parameters.parallel_reconstruction       = 0;                       	% Ca
 ref_im_parameters.recon_overgridding            = 2;                       	% Overgridding for BART reconstructions, relative to original
 ref_im_parameters.vis_overgridding              = 1.1;                   	% Final overgridding of the reference image, relative to orignal
 ref_im_parameters.lambda_cc                     = 1e0;                    	% Regularization parameter for homogeneous coil compression 
-ref_im_parameters.total_readouts                = 700:7000;                % Readouts to extract, we typically don't use the first 700 readouts to let the signal settle in a steady state first.
+ref_im_parameters.total_readouts                = 700:7000;                 % Readouts to extract, we typically don't use the first 700 readouts to let the signal settle in a steady state first.
 
 % parameters specify for bart
 ref_im_parameters.bart.iterations               = 500;                     	% Number of iterations

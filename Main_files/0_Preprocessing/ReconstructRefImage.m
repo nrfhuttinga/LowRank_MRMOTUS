@@ -37,7 +37,7 @@ function ReferenceImage =  ReconstructRefImage(DataStruct,parameters)
     
     parameters      = set_default(parameters,'recon_overgridding',2);
     parameters      = set_default(parameters,'ImDims',80);
-    parameters      = set_default(parameters,'center_out_traj',0);
+    parameters      = set_default(parameters,'centerout_flag',0);
 
     
     parameters.bart = set_default(parameters.bart,'iterations',550);
@@ -47,11 +47,9 @@ function ReferenceImage =  ReconstructRefImage(DataStruct,parameters)
     NumberOfSpatialDims = size(DataStruct.Coordinates,1);
 
     
-    if parameters.center_out_traj
-        indices_on_readouts = 1:numel(Crop1D(size(DataStruct.Coordinates,2),parameters.readout_downsampling));
-    else
-        indices_on_readouts = Crop1D(size(DataStruct.Coordinates,2),parameters.readout_downsampling);
-    end
+    
+    indices_on_readouts = Crop1D(size(DataStruct.Coordinates,2),parameters.readout_downsampling,parameters.centerout_flag);
+    
         
         
     ImDimsOvergridding = make_even(parameters.ImDims * parameters.recon_overgridding);
@@ -93,7 +91,7 @@ function ReferenceImage =  ReconstructRefImage(DataStruct,parameters)
     end
 
 
-    ReferenceImage = reshape_to_square(reshape(crop_boundary(reshape_to_square(double(xstar),NumberOfSpatialDims),ones(1,NumberOfSpatialDims)*parameters.ImDims),[],1),NumberOfSpatialDims);
+    ReferenceImage = reshape_to_square(reshape(crop_boundary(reshape_to_square(double(xstar),NumberOfSpatialDims),ones(1,NumberOfSpatialDims)*parameters.ImDims*parameters.vis_overgridding),[],1),NumberOfSpatialDims);
     disp('+Done')
 
 
