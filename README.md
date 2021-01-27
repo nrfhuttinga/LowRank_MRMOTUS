@@ -2,7 +2,7 @@
 
 This repository contains code to perform low-rank MR-MOTUS reconstructions similar to the ones described in 
 
-`Nonrigid 3D motion estimation at high temporal resolution from prospectively undersampled k‐space data using low‐rank MR‐MOTUS" by Huttinga NRF, Bruijnen T, van den Berg, Sbrizzi A.` [DOI](https://doi.org/10.1002/mrm.28562)
+`Nonrigid 3D motion estimation at high temporal resolution from prospectively undersampled k‐space data using low‐rank MR‐MOTUS` by Huttinga NRF, Bruijnen T, van den Berg, Sbrizzi A. [LINK](https://doi.org/10.1002/mrm.28562)
 
 ### Requirements
 The code relies on non-uniform FFT computations with the [FINUFFT toolbox](https://github.com/flatironinstitute/finufft) by Alex H Barnett et al, a [MATLAB L-BFGS-B-C wrapper](https://github.com/stephenbeckr/L-BFGS-B-C) by Stephen Becker and the [BART toolbox](https://github.com/mrirecon/bart) by Uecker et al. The FINUFFT and L-BFGS-B-C toolboxes are provided in this repository with Linux precompiled MEX-files, but the BART toolbox must be installed beforehand. It may be necessary to recompile the FINUFFT and/or L-BFGS-B toolboxes, depending on your system.
