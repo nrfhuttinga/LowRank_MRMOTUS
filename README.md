@@ -67,6 +67,7 @@ Make sure all paths and parameters in the beginning of "2DGA/Preprocessing/Prepr
 
 # Running reconstructions on your own code
 To run this code on your own data all raw data should be store in a `struct`, with the following structure
+
 `DataStruct`
 * `.RawKspaceData`        - [#readoutsamples x #readouts x 1 x #coils]
 * `.Coordinates`          - [#spatialdims x #readoutsamples x #readouts x #coils]
