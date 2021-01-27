@@ -20,7 +20,7 @@ param_struct.ReadoutsPerDynamic             = 31;           % Number of readouts
 
 % Specify reconstruction parameters
 param_struct.lambda_det                     = 0;            % Jacobian determinant regularization parameter
-param_struct.lambda_TV                      = 5e-7;         % TV regularization parameter
+param_struct.lambda_TV                      = 8.5e-9;       % TV regularization parameter
 param_struct.eps_TV                         = 1e1;          % epsilon for smooth TV approximation
 param_struct.ParallelComputationFlag        = 1;            % Parallel computations or not [0 / 1]
     param_struct.NumberOfThreads            = 4;            % Number of threads used in parallel pool

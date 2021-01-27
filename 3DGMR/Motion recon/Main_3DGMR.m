@@ -11,7 +11,7 @@ rng(1)
 disp('=== Loading parameters and data ===');
 % load parameters and data
 Parameters_3Dt_RespMotion
-load(DataStruct_path)
+load(param_struct.DataStruct_path)
 
 %% 2) Reconstruct motion-fields
 
