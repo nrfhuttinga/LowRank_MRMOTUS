@@ -42,6 +42,7 @@ else
 end
 
 %% Load reference image mask for visualization
+image_for_vis = HighresReferenceImage;
 
 ref_mask_path = [get_data_dir(param_struct.DataStruct_path)];
 try
@@ -84,7 +85,6 @@ if param_struct.postprocessing.JacDeterminantsFlag
     % Some visualization parameters [don't touch]
     determinant_scale = [0 2];
     alpha_ = 0.5;
-    image_for_vis = HighresReferenceImage;
 
     if NumberOfSpatialDims == 3
         fig1=figure('Renderer', 'painters');    
