@@ -31,15 +31,15 @@ function [ReferenceImage,Kdata,varargout]=CalibrateReferenceAndKdata(ReferenceIm
 %     scaling_handle = @(x) mean(abs(x),'all');
     scaling_handle = @(x) norm(x,'fro');
     
-    pars = set_default(pars,'calibration_readouts',1:size(Kdata,2));
+    pars = set_default(pars,'calibration_readouts',1:min(size(Kdata,2),100));
     
     traj_magn = sqrt(sum(Traj(:,:,pars.calibration_readouts(1)).^2,2));
     [~,ind]=min(traj_magn,[],1);
-    pars = set_default(pars,'calibration_indices_on_readout',ind);
+    pars = set_default(pars,'calibration_indices_on_readout',ind+[-9:9]);
     
-    
+    ordering = [2 1 3];
     calibration_coordinates(:,:,:) = Traj(pars.calibration_indices_on_readout,:,pars.calibration_readouts);
-    calibration_coordinates(:,:,:) = calibration_coordinates(:,[2 1 3],:);
+    calibration_coordinates(:,:,:) = calibration_coordinates(:,ordering(1:size(Traj,2)),:);
     ReferenceImage = ForceSquareShape(ReferenceImage);
     
 

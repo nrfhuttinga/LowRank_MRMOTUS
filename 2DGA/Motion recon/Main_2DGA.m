@@ -1,6 +1,6 @@
 %% Copyright UMC Utrecht, 2020. Written by Niek Huttinga, 2020. For academic purpose only.
 
-restoredefaultpath;addpath(genpath('../LowRank_MRMOTUS')); % TB edit: this is easier for people that download the repo
+restoredefaultpath;addpath(genpath('../LowRank_MRMOTUS')); 
 close all;
 clear all;
 rng(1)
