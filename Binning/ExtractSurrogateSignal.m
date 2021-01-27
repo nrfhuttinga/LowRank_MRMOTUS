@@ -26,7 +26,7 @@ function DataStruct=ExtractSurrogateSignal(DataStruct,pars)
     %           .LowpassFilterDelay         - introduced low pass filter delay
     %           .SurrogateSignal            - final extracted surrogate signal
     %
-    % Niek Huttinga, UMC Utrecht, 2020
+    % Copyright UMC Utrecht, 2020. Written by Niek Huttinga, 2020. For academic purpose only.
 
     if nargin<2 
         pars=[];

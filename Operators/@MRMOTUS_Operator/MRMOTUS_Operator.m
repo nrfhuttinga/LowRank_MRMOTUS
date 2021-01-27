@@ -2,7 +2,7 @@ classdef MRMOTUS_Operator
     % Main class for MR-MOTUS reconstructions: performs all required initializations and contains
     % forward operators, regularization operators, and all corresponding gradients
     %
-    % Niek Huttinga, UMC Utrecht, 2020
+    % Copyright UMC Utrecht, 2020. Written by Niek Huttinga, 2020. For academic purpose only.
     
     properties 
         ReferenceImage

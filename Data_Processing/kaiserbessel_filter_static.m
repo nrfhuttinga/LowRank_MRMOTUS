@@ -1,6 +1,8 @@
 function [filtered_signal,delay]=kaiserbessel_filter_static(raw_data,varargin)
 % Filter all rows in raw_data with a kaiser bessel filter with filter
 % settings below, or with settings in varargin{1} struct
+%
+% Copyright UMC Utrecht, 2020. Written by Niek Huttinga, 2020. For academic purpose only.
 
 if nargin<2
     % Filter settings

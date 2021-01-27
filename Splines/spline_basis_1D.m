@@ -9,7 +9,7 @@ function B = spline_basis_1D(N_gridpoints,SplineOrder,DerivativeOrder)
 %   figure;plot(sum(B,2));title('Sum over all basis functions per grid
 %   point');
 %
-% Niek Huttinga - UMC Utrecht - 2020
+% Copyright UMC Utrecht, 2020. Written by Niek Huttinga, 2020. For academic purpose only.
 
 if nargin<3 || isempty(DerivativeOrder)
     DerivativeOrder = 0;

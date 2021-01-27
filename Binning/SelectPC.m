@@ -13,7 +13,7 @@ function surrogate=SelectPC(data,pars)
     % Outputs
     %   surrogate           - extract surrogate signal [time x 1]
     %
-    % Niek Huttinga - UMC Utrecht - 2020
+    % Copyright UMC Utrecht, 2020. Written by Niek Huttinga, 2020. For academic purpose only.
     
     if nargin<2
         pars=[];

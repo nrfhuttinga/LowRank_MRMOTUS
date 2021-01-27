@@ -8,7 +8,7 @@ function data_out=crop_boundary(data_in,new_size)
 % Output:
 %   data_out        - cropped data [N1_new x N2_new x (N3_new)]
 %
-% Niek Huttinga, UMC Utrecht, 2020
+% Copyright UMC Utrecht, 2020. Written by Niek Huttinga, 2020. For academic purpose only.
 
 old_size = size(data_in);
 

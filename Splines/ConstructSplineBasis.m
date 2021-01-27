@@ -11,7 +11,9 @@ function [BasisMatrix] = ConstructSplineBasis(N_gridpoints,SplineOrder,varargin)
     %
     % Outputs 
     %   BasisMatrix     - Matrix with the spline basis [N^d x prod(splineOrder)]
-    
+    %
+    % Copyright UMC Utrecht, 2020. Written by Niek Huttinga, 2020. For academic purpose only.
+
     
     if nargin >= 5
         DerivativeOrder = varargin{3};

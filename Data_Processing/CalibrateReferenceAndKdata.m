@@ -12,7 +12,7 @@ function [ReferenceImage,Kdata]=CalibrateReferenceAndKdata(ReferenceImage,Kdata,
     %   ReferenceImage          - Scaled input such that F(displacements=0) = ReferenceImage
     %   Kdata                   - Scaled input such that F(displacements=0) = ReferenceImage
     %
-    % Niek Huttinga, UMC Utrecht, 2020
+    % Copyright UMC Utrecht, 2020. Written by Niek Huttinga, 2020. For academic purpose only.
     
     ReferenceImage = ForceSquareShape(ReferenceImage);
     

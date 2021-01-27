@@ -12,7 +12,7 @@ function [tv_total,gradient_total] = vectorial_tv_operator(x,eps_TV,D)
     %   tv_total        - total variation of the input
     %   gradient_total  - corresponding gradients
     %
-    % Niek Huttinga, UMC Utrecht, 2020
+    % Copyright UMC Utrecht, 2020. Written by Niek Huttinga, 2020. For academic purpose only.
     
     grad_out_size = size(x);
 

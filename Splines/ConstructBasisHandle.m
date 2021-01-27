@@ -15,7 +15,7 @@ function BasisHandle=ConstructBasisHandle(options)
 %      dimension        -   Number of spatial dimensions [2/3]
 %
 %
-%  Created by Niek Huttinga, UMC Utrecht, 2020.
+%   Copyright UMC Utrecht, 2020. Written by Niek Huttinga, 2020. For academic purpose only.
 
 if ~isfield(options,'spline_orders_z')
     options.spline_orders_z = options.spline_orders;

@@ -3,7 +3,7 @@ function size_vector=size_ext(data,dimensions)
     % Input: array + dimensions
     % Output: vector with sizes along specified dimensions
     %
-    % Niek Huttinga, UMC Utrecht, 2020
+    % Copyright UMC Utrecht, 2020. Written by Niek Huttinga, 2020. For academic purpose only.
 
     if numel(dimensions)>numel(size(data))
         error('Dimension vector larger than number of dimensions, aborting.')

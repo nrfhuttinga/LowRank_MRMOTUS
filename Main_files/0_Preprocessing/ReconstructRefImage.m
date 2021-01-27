@@ -95,7 +95,6 @@ function ReferenceImage =  ReconstructRefImage(DataStruct,parameters)
 
     ReferenceImage = reshape_to_square(reshape(crop_boundary(reshape_to_square(double(xstar),NumberOfSpatialDims),ones(1,NumberOfSpatialDims)*parameters.ImDims),[],1),NumberOfSpatialDims);
     disp('+Done')
-    slicer5d(ReferenceImage)
 
 
 end

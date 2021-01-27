@@ -8,7 +8,7 @@ function image=reshape_to_square(image,varargin)
 % Outputs
 %   image           - N x N (xN)
 %
-% Niek Huttinga, UMC Utrecht, 2020
+% Copyright UMC Utrecht, 2020. Written by Niek Huttinga, 2020. For academic purpose only.
 
 if nargin>1
     dimension = varargin{1};

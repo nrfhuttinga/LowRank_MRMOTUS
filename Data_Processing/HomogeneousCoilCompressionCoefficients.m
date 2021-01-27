@@ -11,7 +11,7 @@ function combinationCoefficients = HomogeneousCoilCompressionCoefficients(coil_s
     % Output:
     %   combinationCoefficients - [1 x 1 x 1 x N_c]
     %
-    % Niek Huttinga, UMC Utrecht, 2020
+    % Copyright UMC Utrecht, 2020. Written by Niek Huttinga, 2020. For academic purpose only.
 
     coil_sensitivities_reshaped = double(reshape(coil_sensitivities,[],size(coil_sensitivities,4)));
 

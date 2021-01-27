@@ -21,7 +21,7 @@ function [imgs_out,cm] = MotionImageOverlay_3Dt(Images,motionFields,dimension,sl
 
     [dim2,dim1,dim3,~,dynamics]=size(Images);
 
-    motionFields_reshaped = reshape(motionFields,dim2,dim1,dim3,3,dynamics);
+    motionFields_reshaped = reshape(motionFields,dim2,dim1,dim3,size(motionFields,2),dynamics);
 
         
     if nargin < 12

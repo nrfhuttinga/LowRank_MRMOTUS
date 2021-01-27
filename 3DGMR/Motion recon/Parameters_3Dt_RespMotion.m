@@ -1,7 +1,7 @@
 % Parameters for 3D+t respiratory motion reconstructions. Copy and edit this file 
 % for your own reconstructions
 %
-% Niek Huttinga - UMC Utrecht - 2020
+% Copyright UMC Utrecht, 2020. Written by Niek Huttinga, 2020. For academic purpose only.
 
 
 
@@ -36,4 +36,16 @@ param_struct.NumberOfTemporalSplines        = round(param_struct.ReadoutsPerDyna
 
 % Visualization flags
 param_struct.VisualizationFlag              = 1;            % Flag to specify visualizations during LBFGS reconstructions
-param_struct.HighresVisualizationFlag       = 1;            % Flag to specify whether to upscale motion-fields after the reconstruction for visualization
+
+
+param_struct.postprocessing.HighresVisualizationFlag       = 1;            % Flag to specify whether to upscale motion-fields after the reconstruction for visualization
+param_struct.postprocessing.WarpRefImageFlag            = 1;
+param_struct.postprocessing.JacDeterminantsFlag         = 1;
+param_struct.postprocessing.MotionImageOverlayFlag      = 1;
+
+param_struct.postprocessing.crop_coronal        = @(x) x(:,10:end);
+param_struct.postprocessing.crop_sagittal       = @(x) x(:,30:end-10);
+param_struct.postprocessing.crop_transverse     = @(x) x(:,10:end);
+param_struct.postprocessing.cor_slice = 67;
+param_struct.postprocessing.sag_slice = 64;
+param_struct.postprocessing.trans_slice = 64;

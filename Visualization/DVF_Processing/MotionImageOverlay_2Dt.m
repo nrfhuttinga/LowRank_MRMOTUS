@@ -1,6 +1,6 @@
 function [imgs_out,cm] = MotionImageOverlay_2Dt(Images,motionFields,varargin)
     % Inputs: 
-    %   - Image:                    :   N x N x T 2d+t images used to overlay motionFields on
+    %   - Image:                    :   N x N x 1 x 1 x T 2d+t images used to overlay motionFields on
     %   - motionFields{t}(:,:,1)    :   motionFields in horizontal direction at time t; 
     %                                   left is negative, right is positive
     %   - motionFields{t}(:,:,2)    :   motionFields in vertical direction at time t; 
@@ -28,7 +28,7 @@ function [imgs_out,cm] = MotionImageOverlay_2Dt(Images,motionFields,varargin)
     end
 
     if nargin < 9 || isempty(varargin{7})
-        maskk = ones(size(Images(:,:,1)));
+        maskk = ones(size(Images(:,:,:,:,1)));
     else
         maskk = varargin{7};
     end
@@ -78,13 +78,13 @@ function [imgs_out,cm] = MotionImageOverlay_2Dt(Images,motionFields,varargin)
     end
     set(gcf,'Color','w')
 
+    [~,~,~,~,dynamics]=size(Images);
 
     if rotations == 1 % counterclockwise
         % x -> y
         % y -> -x
 
         Images = rot90(Images,rotations);
-        [~,~,dynamics]=size(Images);
 
 
         for i=1:dynamics
@@ -101,7 +101,6 @@ function [imgs_out,cm] = MotionImageOverlay_2Dt(Images,motionFields,varargin)
 
 
         Images = rot90(Images,rotations);
-        [~,~,dynamics]=size(Images);
 
 
         for i=1:dynamics
@@ -119,7 +118,6 @@ function [imgs_out,cm] = MotionImageOverlay_2Dt(Images,motionFields,varargin)
         % y -> -x -> -y -> x
 
         Images = rot90(Images,rotations);
-        [~,~,dynamics]=size(Images);
 
 
         for i=1:dynamics
@@ -131,7 +129,7 @@ function [imgs_out,cm] = MotionImageOverlay_2Dt(Images,motionFields,varargin)
     end
 
 
-    [dim2,dim1,dynamics]=size(Images);
+    [dim2,dim1,~]=size(Images);
 
 
 
@@ -151,7 +149,7 @@ function [imgs_out,cm] = MotionImageOverlay_2Dt(Images,motionFields,varargin)
 
         motionField_HOR = scaling*squeeze(motionFields{i}(:,:,1)).*quiver_mask;
         motionField_VER = scaling*squeeze(motionFields{i}(:,:,2)).*quiver_mask;
-        Image           = squeeze(Images(:,:,i)).*maskk;
+        Image           = squeeze(Images(:,:,:,:,i)).*maskk;
 
         motionField_HOR(abs(Image)<threshold | ~maskk)=0;
         motionField_VER(abs(Image)<threshold | ~maskk)=0;

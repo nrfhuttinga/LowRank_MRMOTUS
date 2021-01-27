@@ -18,7 +18,7 @@ function y=cubic_spline_1d(x,derivative_order)
 %        figure,plot(cubic_spline_1d(linspace(-2,2,20),2));hold on;plot(gradient(gradient(cubic_spline_1d(linspace(-2,2,20),0),4/19),4/20))
 %
 %
-% Niek Huttinga, UMC Utrecht, 2020
+% Copyright UMC Utrecht, 2020. Written by Niek Huttinga, 2020. For academic purpose only.
 
 ind1 = x>=-2 & x<-1;
 ind2 = x>=-1 & x< 0;

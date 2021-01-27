@@ -3,7 +3,7 @@ function cropped_indices=Crop1D(N,scale)
     %
     % Note: function assume k0 point is at round(N/2)+1, for a readout of N samples.
     %
-    % Niek Huttinga, UMC Utrecht, 2020.
+    % Copyright UMC Utrecht, 2020. Written by Niek Huttinga, 2020. For academic purpose only.
     
     cropped_indices = [-round(N/scale/2):round(N/scale/2)-1] + round(N/2)+1;
 

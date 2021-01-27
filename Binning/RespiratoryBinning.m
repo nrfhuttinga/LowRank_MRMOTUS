@@ -12,8 +12,8 @@ function [index,phase] = RespiratoryBinning(par)
     %   index                       - indices in order to perform sorting, i.e. par.surrogate_signal(index) sorts the surrogate signal
     %   phase                       - calculated phase for each of the input samples
     %
-    %  Written by Bjorn Stemkens, UMC Utrecht, edited by Niek Huttinga, UMC
-    %  Utrecht, 2020.
+    % Written by Bjorn Stemkens, UMC Utrecht, edited by Niek Huttinga, UMC
+    % Copyright UMC Utrecht, 2020. For academic purpose only.
     
     par = set_default(par,'binning_strategy','phase');      % amplitude | phase | hybrid (phase, then amplitude) | amplitude binning in mid position
     par = set_default(par,'thresh',0.005);                  % sensitivity of the peak detection

@@ -10,7 +10,7 @@ function output=WarpReferenceImage(ReferenceImage,MotionFields)
 %   MotionFields        - [N^d x d x T] motion-fields
 %
 % Output:
-%   output: [N_new x N_new (x N_new) x T] image sequence.
+%   output: [N_new x N_new x N_new / 1 x 1 x T] image sequence.
 %
 % Niek Huttinga - 2020 - UMC Utrecht
 
@@ -35,7 +35,6 @@ function output=WarpReferenceImage(ReferenceImage,MotionFields)
     % ==== warping of reference with highres motion-fields ======
     disp('+     Warping high-res reference with reconstructed motion-fields')
     ReferenceGrid = MRMOTUS_Operator.MakeReferenceGrid(N_new,NumberOfSpatialDims);
-    output = zeros([ones(1,NumberOfSpatialDims)*N_new,1,NumberOfDynamics]);
 
 
     no_batches  = ceil(NumberOfDynamics/batch_size);
@@ -48,11 +47,11 @@ function output=WarpReferenceImage(ReferenceImage,MotionFields)
         clearvars resultt
         % warp high res reference image
         parfor rr=1:numel(vis_indices)
-            resultt(:,:,:,rr) = single(abs(ifft_mri(reshape_to_square(MotionFieldOperator(ReferenceGrid/N_new,ReferenceGrid,squeeze(mf_highres(:,:,vis_indices(rr))))*single(abs(ReferenceImage(:))),NumberOfSpatialDims))));
+            resultt(:,:,:,:,rr) = single(abs(ifft_mri(reshape_to_square(MotionFieldOperator(ReferenceGrid/N_new,ReferenceGrid,squeeze(mf_highres(:,:,vis_indices(rr))))*single(abs(ReferenceImage(:))),NumberOfSpatialDims))));
         end
 
         % store result
-        output(:,:,:,vis_indices)=resultt;
+        output(:,:,:,:,vis_indices)=resultt;
     end
 end
 

@@ -10,7 +10,7 @@ function compressed_inputs=LinearCoilCompression(inputs_to_compress,compression_
     % Output:
     %   compressed_inputs           - 'inputs_to_compress' compressed along 'compression_dimension' 
     %
-    % Niek Huttinga, UMC Utrecht, 2020
+    % Copyright UMC Utrecht, 2020. Written by Niek Huttinga, 2020. For academic purpose only.
     
 
 

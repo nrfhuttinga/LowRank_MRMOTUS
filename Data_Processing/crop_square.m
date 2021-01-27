@@ -8,7 +8,7 @@ function cropped_image = crop_square(im,dim_crop)
 % Outputs
 %   cropped_image   - outputs [N-2*d1 x N-2*d2, N-2*d3]
 %
-% Niek Huttinga, UMC Utrecht, 2020
+% Copyright UMC Utrecht, 2020. Written by Niek Huttinga, 2020. For academic purpose only.
 
 im_size = size(im);
 

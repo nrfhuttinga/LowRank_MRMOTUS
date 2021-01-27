@@ -1,7 +1,7 @@
 function [P1,f]=SingleSidedFFT(X,Fs,d)
 % Perform single sided FFT on 'X', which has sample frequency 'Fs' in Hz
 %
-% Niek Huttinga - UMC Utrecht - 2020
+% Copyright UMC Utrecht, 2020. Written by Niek Huttinga, 2020. For academic purpose only.
 
 sx = size(X);
 if numel(sx)>2

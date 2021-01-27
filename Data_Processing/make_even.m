@@ -1,7 +1,7 @@
 function even_integer=make_even(input)
     % Make odd input even by substracting one.
     %
-    % Niek Huttinga, UMC Utrecht, 2020.
+    % Copyright UMC Utrecht, 2020. Written by Niek Huttinga, 2020. For academic purpose only.
 
     input = round(input);
 
