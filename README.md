@@ -66,14 +66,14 @@ run('3DGMR/Motion recon/Main_3DGMR.m')                      # preform step 8
 Make sure all paths and parameters in the beginning of "2DGA/Preprocessing/Preprocess_and_RefImage_3DGMR.m" and "3DGMR/Motion recon/Parameters_3Dt_RespMotion.m" are set correctly.
 
 # Running reconstructions on your own code
-1.To run this code on your own data all raw data should first be stored in a `struct` 'DataStruct', with the following structure:
+1. To run this code on your own data all raw data should first be stored in a `struct` 'DataStruct', with the following structure:
 
-`DataStruct`
-* `.RawKspaceData`        - complex matrix of size #readoutsamples x #readouts x 1 x #coils
-* `.Coordinates`          - real matrix of size #spatialdims x #readoutsamples x #readouts x #coils
-* `.Coils`          
-  * `.Sensitivities`      - complex matrix of size #ImDim1 x #ImDim2 x #ImDim3 x #coils
-  * `.Noise_covariance`   - complex matrix of size #coils x #coils (can be set to identity)
+  `DataStruct`
+  * `.RawKspaceData`        - complex matrix of size #readoutsamples x #readouts x 1 x #coils
+  * `.Coordinates`          - real matrix of size #spatialdims x #readoutsamples x #readouts x #coils
+  * `.Coils`          
+    * `.Sensitivities`      - complex matrix of size #ImDim1 x #ImDim2 x #ImDim3 x #coils
+    * `.Noise_covariance`   - complex matrix of size #coils x #coils (can be set to identity)
 
 2. Copy and edit the parameter file for reference image reconstruction (e.g. '2DGA/Preprocessing/ref_im_parameters_2DGA.m')
 3. Copy and edit the main preprocessing script to include your new parameter file (e.g. '2DGA/Preprocessing/Preprocess_and_RefImage_2DGA.m')
