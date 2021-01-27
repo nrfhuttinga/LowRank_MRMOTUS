@@ -1,4 +1,3 @@
-*.mat
 Data/3DGMR/*
 Data/2DGA/DataStruct_raw.mat
 *.m~
