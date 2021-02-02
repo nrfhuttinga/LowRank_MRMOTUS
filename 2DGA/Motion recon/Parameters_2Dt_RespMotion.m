@@ -20,7 +20,7 @@ param_struct.RespResolvedReconstruction     = 0;            % 0 - time-resolved 
 
 % Specify reconstruction parameters
 param_struct.lambda_det                     = 0*1;          % Jacobian determinant regularization parameter
-param_struct.lambda_TV                      = 7e-6;         % TV regularization parameter
+param_struct.lambda_TV                      = 7e-7;         % TV regularization parameter
 param_struct.eps_TV                         = 1e-2;         % epsilon for smooth TV approximation
 param_struct.ParallelComputationFlag        = 0;            % parallel computations or not [0 / 1]
     param_struct.NumberOfThreads            = 4;            % Number of threads used in parallel pool
