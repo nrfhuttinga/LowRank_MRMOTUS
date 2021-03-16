@@ -315,15 +315,15 @@ classdef MRMOTUS_Operator
                 end
                 try
                     figure(91),
-                    subplot(4,3,1);plot(abs(ForwardSignal(1:300,1)));title('Forward model vs. Kspace data');hold on;
-                    plot(abs(KspaceData(1:300)));hold off;
-                    subplot(4,3,2),plot(PsiT.');title('Temporal profiles');%legend;
+                    subplot(4,3,1);plot(abs(ForwardSignal(1:300,1)));xlabel('Sample index');ylabel('Magnitude [a.u.]');title('Forward model vs. Kspace data');hold on;
+                    plot(abs(KspaceData(1:300)));hold off;legend('forward model','kspace data');
+                    subplot(4,3,2),plot(PsiT.');title('Temporal profiles');legend;xlabel('Dynamic index');ylabel('Magnitude [a.u.]');
 
                     if obj.NumberOfSpatialDims==3
                         subplot(4,3,4);imagesc(rot90(squeeze(vis(:,end/2,:,1)),1));axis image;colormap gray; axis off;colorbar;title('Spatial component 1 - Sagittal')
                         subplot(4,3,5);imagesc(rot90(squeeze(vis(:,:,end/2,1)),0));axis image;colormap gray; axis off;colorbar;title('Spatial component 1 - Axial')
                         subplot(4,3,6);imagesc(rot90(squeeze(vis(end/2,:,:,1)),1));axis image;colormap gray; axis off;colorbar;title('Spatial component 1 - Coronal')
-                        subplot(4,3,3);plot(MotionFieldCoefficients{1}(:));title('Spline coefficients')
+                        subplot(4,3,3);plot(MotionFieldCoefficients{1}(:));title('Spline coefficients');xlabel('Coefficient index');ylabel('Magnitude [a.u.]');
                         if obj.param_struct.NumberOfComponents > 1
                             
                             for i=1:min(2,(obj.param_struct.NumberOfComponents-1))
@@ -333,7 +333,7 @@ classdef MRMOTUS_Operator
                             end
                         end
                     else
-                        subplot(4,3,3);plot(MotionFieldCoefficients{1}(:));title('Spline coefficients')
+                        subplot(4,3,3);plot(MotionFieldCoefficients{1}(:));title('Spline coefficients');xlabel('Coefficient index');ylabel('Magnitude [a.u.]');
 
                         for i=0:min(5,obj.param_struct.NumberOfComponents-1)
                             subplot(4,3,4+i);imagesc(rot90(squeeze(vis(:,:,:,i+1)),0));axis image;colormap gray; axis off;colorbar;title(['Spatial component ',num2str(i+1)])
@@ -514,6 +514,11 @@ classdef MRMOTUS_Operator
             
             basis_options_spatial.N                 = obj.ImDims;
             basis_options_spatial.spline_orders     = obj.param_struct.NumberOfSpatialSplines;
+            
+            if isfield(obj.param_struct,'NumberOfSpatialSplines_Z')
+                basis_options_spatial.spline_orders_z = obj.param_struct.NumberOfSpatialSplines_Z;
+            end
+            
             basis_options_spatial.dimension         = obj.NumberOfSpatialDims;
             basis_options_spatial.spatial_ordering  = [2 1 3 4];
 

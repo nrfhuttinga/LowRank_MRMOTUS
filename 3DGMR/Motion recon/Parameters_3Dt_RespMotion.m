@@ -20,7 +20,7 @@ param_struct.ReadoutsPerDynamic             = 31;           % Number of readouts
 
 % Specify reconstruction parameters
 param_struct.lambda_det                     = 0;            % Jacobian determinant regularization parameter
-param_struct.lambda_TV                      = 8.5e-9;       % TV regularization parameter
+param_struct.lambda_TV                      = 4e-8;         % TV regularization parameter
 param_struct.eps_TV                         = 1e1;          % epsilon for smooth TV approximation
 param_struct.ParallelComputationFlag        = 1;            % Parallel computations or not [0 / 1]
     param_struct.NumberOfThreads            = 4;            % Number of threads used in parallel pool
@@ -31,7 +31,8 @@ param_struct.NumberOfComponents             = 1;            % Number of componen
 
     
 % Parameters for the spline bases
-param_struct.NumberOfSpatialSplines         = [20].';                                                                       % Number of splines per spatial dimension
+param_struct.NumberOfSpatialSplines         = [24].';       % Number of splines per spatial dimension
+param_struct.NumberOfSpatialSplines_Z       = 16;           % Number of splines in Z direction
 param_struct.NumberOfTemporalSplines        = round(param_struct.ReadoutsPerDynamic*param_struct.NumberOfDynamics/800*5);   % Number of splines over the temporal dimension
 
 % Visualization flags
@@ -46,6 +47,6 @@ param_struct.postprocessing.MotionImageOverlayFlag      = 1;
 param_struct.postprocessing.crop_coronal        = @(x) x(:,10:end);
 param_struct.postprocessing.crop_sagittal       = @(x) x(:,30:end-10);
 param_struct.postprocessing.crop_transverse     = @(x) x(:,10:end);
-param_struct.postprocessing.cor_slice = 67;
-param_struct.postprocessing.sag_slice = 64;
-param_struct.postprocessing.trans_slice = 64;
+param_struct.postprocessing.cor_slice = 78;
+param_struct.postprocessing.sag_slice = 46;
+param_struct.postprocessing.trans_slice = 39;

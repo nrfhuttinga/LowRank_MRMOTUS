@@ -22,7 +22,7 @@ function surrogate=SelectPC(data,pars)
     pars=set_default(pars,  'pc_freq_range', [0.1 0.5]);
     pars=set_default(pars,  'fs',         1/(4.4*1e-3) );
     pars=set_default(pars,  'visualize', 1);
-    
+
     disp(['+   Performing SVD on Casorati matrix of k-space data'])
     [~,~,v]=svd(abs(data),'econ');
     [spectrum,frequencies]=SingleSidedFFT(v,pars.fs,1);

@@ -18,6 +18,10 @@ set(gca,'YColor','w')
 potential_title_objects = findall(gca, 'type', 'text', 'handlevisibility', 'off');
 set(potential_title_objects,'Color','w');
 
+C = findall(gcf,'type','ColorBar');
+if ~isempty(C)
+    C.Color = 'white';
+end
 
 a=findobj(gcf, 'Type', 'Legend');
 if ~isempty(a)

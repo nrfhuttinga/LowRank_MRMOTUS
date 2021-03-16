@@ -247,12 +247,12 @@ fprintf('\n');
 if plotting
     f=figure(99);movegui(f,'southeast');
     subplot(1,2,1);
-    plot(1:k,[history{1:k,1}],'Marker','o');title('Obj. function value vs. iteration')
+    plot(1:k,[history{1:k,1}],'Marker','o');title('Obj. function value vs. iteration');xlabel('Iteration #');ylabel('Obj. function value');
     if k>1
         xlim([1 size(history,1)]);
     end
     subplot(1,2,2);
-    plot([history{1:k,4}],[history{1:k,1}],'Marker','o');xlim([0 max([history{1:k,4}])]);title('Obj. function value vs. time')
+    plot([history{1:k,4}],[history{1:k,1}],'Marker','o');xlim([0 max([history{1:k,4}])]);title('Obj. function value vs. time');xlabel('Time [s]');ylabel('Obj. function value');
     drawnow;
 end
 % for col = 3:size(history,2)

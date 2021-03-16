@@ -99,8 +99,7 @@ options.errFcn  = {@(x) x(:),@(x) toc};
 % Run recons
 tic
 [dvf,~,info]=lbfgsb(f_handle,options.lb,options.ub,options);
-info
-b=toc
+
 
 
 % Export results

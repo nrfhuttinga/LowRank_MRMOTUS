@@ -5,7 +5,7 @@ if nargin < 2
 end
 
 if nargin < 1
-    FontSize = 18;
+    FontSize = 30;
 end
 
 set_background_white;

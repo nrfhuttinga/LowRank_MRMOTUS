@@ -28,16 +28,16 @@ delay=ceil(mean(grpdelay(lpFilt,size(raw_data,2),filter_parameters.Fs)));
 % end
 
 filtered_signal = zeros(size(raw_data));
-
-for i=1:size(raw_data,1)
-for j=1:size(raw_data,3)
-for k=1:size(raw_data,4)
-
-    filter_output = filter(lpFilt,squeeze(raw_data(i,:,j,k)));
-    filter_output(1:delay)=[];
-    filtered_signal(i,1:size(filter_output,2),j,k)=filter_output;
-end
-end
-end
+% 
+% for i=1:size(raw_data,1)
+% for j=1:size(raw_data,3)
+% for k=1:size(raw_data,4)
+% 
+%     filter_output = filter(lpFilt,squeeze(raw_data(i,:,j,k)));
+%     filter_output(1:delay)=[];
+%     filtered_signal(i,1:size(filter_output,2),j,k)=filter_output;
+% end
+% end
+% end
 
 end

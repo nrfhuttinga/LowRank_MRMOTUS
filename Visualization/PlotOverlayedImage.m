@@ -14,6 +14,8 @@ function PlotOverlayedImage(im_1,im_2,alpha_,axes_object,caxis_scale,varargin)
 %
 % Niek Huttinga, UMC Utrecht, 2020
 
+im_1 = demax(abs(im_1));
+
 if numel(varargin)>0
     cb_offset = varargin{1};
 else
@@ -66,9 +68,9 @@ end
 
 
 alpha = ones(size(im_1))*alpha_;
-alpha(abs(im_1)<0.1)=0;
+alpha(abs(im_1)==0)=0;
 
 set( OverlayImage, 'AlphaData', alpha );
-% set_background_black
+
 
 end

@@ -13,6 +13,14 @@ function combinationCoefficients = HomogeneousCoilCompressionCoefficients(coil_s
     %
     % Copyright UMC Utrecht, 2020. Written by Niek Huttinga, 2020. For academic purpose only.
 
+    ncoils = size(coil_sensitivities,4);
+    
+    if sum(size(noise_covariance)==ncoils)==0
+        warning('Incorrect noise covariance matrix size, setting to identiy matrix');
+        noise_covariance = eye(ncoils);
+    end
+    
+    
     coil_sensitivities_reshaped = double(reshape(coil_sensitivities,[],size(coil_sensitivities,4)));
 
 

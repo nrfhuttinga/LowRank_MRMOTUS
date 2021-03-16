@@ -1,18 +1,67 @@
-function MRMOTUS_PostProcessing( MF, param_struct )
+function result=MRMOTUS_PostProcessing( MF, param_struct )
+
+if nargin<2 || (~isfield(param_struct,'DataStruct_path') || ~isfield(param_struct,'highres_referenceimage_path'))
+    error('Specify atleast param_struct.DataStruct_path and param_struct.highres_referenceimage_path');
+end
+
+if ~isfield(param_struct,'postprocessing')
+    param_struct.postprocessing=[];
+end
+
+
+param_struct.postprocessing = set_default(param_struct.postprocessing,'WarpRefImageFlag',           1);
+param_struct.postprocessing = set_default(param_struct.postprocessing,'MotionImageOverlayFlag',     1);
+param_struct.postprocessing = set_default(param_struct.postprocessing,'JacDeterminantsFlag',        1);
+param_struct.postprocessing = set_default(param_struct.postprocessing,'HighresVisualizationFlag',   1);
+param_struct.postprocessing = set_default(param_struct.postprocessing,'visualization_handle_noabs', @(x) x);
+param_struct.postprocessing = set_default(param_struct.postprocessing,'HighresVisualizationFlag',   1);
+param_struct.postprocessing = set_default(param_struct.postprocessing,'flips',                      zeros(1,size(MF,2)));
+
+param_struct = set_default(param_struct,'export_folder',                '');
+param_struct = set_default(param_struct,'export_suffix',                '');
+param_struct = set_default(param_struct,'RespResolvedReconstruction',   0);
+param_struct = set_default(param_struct,'ReadoutsPerDynamic',           31);
+
 
 NumberOfSpatialDims = size( MF , 2);
+no_dyns             = size( MF , 3);
+
 
 % Load the high resolution reference image for visualizations
 if param_struct.postprocessing.HighresVisualizationFlag
-    load(param_struct.highres_referenceimage_path);
+    HighresReferenceImage = load(param_struct.highres_referenceimage_path);
+    fnames = fieldnames(HighresReferenceImage);
+    HighresReferenceImage = HighresReferenceImage.(fnames{:});
 else
+    load(param_struct.DataStruct_path);
     HighresReferenceImage = DataStruct.ReferenceImage;
 end
+
+
+% flip reference image if required
+for i=1:numel(param_struct.postprocessing.flips)
+    if param_struct.postprocessing.flips(i)
+        HighresReferenceImage = flip(HighresReferenceImage,i);
+    end
+end
+HighresReferenceImage = HighresReferenceImage.^.7;
+% flip motion-field if required
+MF = FlipMotionField(MF, param_struct.postprocessing.flips);
 
 ImDim     = round((size(MF,1)).^(1/NumberOfSpatialDims));
 ImDim_vis = size(HighresReferenceImage,1);
 
+
+param_struct.postprocessing = set_default(param_struct.postprocessing,'cor_slice',          round(ImDim_vis/2+1));
+param_struct.postprocessing = set_default(param_struct.postprocessing,'sag_slice',          round(ImDim_vis/2+1));
+param_struct.postprocessing = set_default(param_struct.postprocessing,'trans_slice',        round(ImDim_vis/2+1));
+param_struct.postprocessing = set_default(param_struct.postprocessing,'crop_coronal',       @(x) x);
+param_struct.postprocessing = set_default(param_struct.postprocessing,'crop_sagittal',      @(x) x);
+param_struct.postprocessing = set_default(param_struct.postprocessing,'crop_transverse',    @(x) x);
+
+
 %%  ==== Warping reference image with reconstructed motion-fields ======
+
 
 if param_struct.postprocessing.WarpRefImageFlag || param_struct.postprocessing.MotionImageOverlayFlag
     disp('=== Warping reference image with reconstructed motion-fields ===')
@@ -23,23 +72,34 @@ if param_struct.postprocessing.WarpRefImageFlag || param_struct.postprocessing.M
     % Actual warping of the high-resolution reference image
     result = WarpReferenceImage(HighresReferenceImage,MF);
     disp('+Saving warped reference image');
-    save([param_struct.export_folder,'result',param_struct.export_suffix,'.mat'],'result','-v7.3')
+    try
+        save([param_struct.export_folder,'result',param_struct.export_suffix,'.mat'],'result','-v7.3')
+    catch
+        warning('error in saving, attempting to save in working directory...');
+        save(['result',param_struct.export_suffix,'.mat'],'result','-v7.3')
+    end
+    
     disp('+Done saving');
 
     % Visualize warped reference image results
     slicer5d(abs(result))
+else
+    result = [];
 end
+
 
 
 %%  Set visualization handles
 
 if NumberOfSpatialDims == 3
-    handle_coronal      = @(x) rot90((squeeze(abs(x(param_struct.postprocessing.cor_slice,:,:,:)))),1);
-    handle_sagittal     = @(x) rot90((squeeze(abs(x(:,param_struct.postprocessing.sag_slice,:,:)))),1);
-    handle_transverse   = @(x) rot90((squeeze(abs(x(:,:,param_struct.postprocessing.trans_slice,:)))),0);
+    param_struct.postprocessing = set_default(param_struct.postprocessing,'handle_coronal',@(x) rot90((squeeze(abs(x(param_struct.postprocessing.cor_slice,:,:,:)))),1));
+    param_struct.postprocessing = set_default(param_struct.postprocessing,'handle_sagittal',@(x) rot90((squeeze(abs(x(:,param_struct.postprocessing.sag_slice,:,:)))),1));
+    param_struct.postprocessing = set_default(param_struct.postprocessing,'handle_transverse',@(x) rot90((squeeze(abs(x(:,:,param_struct.postprocessing.trans_slice,:)))),0));
 else 
     visualization_handle_abs = @(x) abs(param_struct.postprocessing.visualization_handle_noabs(x));
 end
+
+
 
 %% Load reference image mask for visualization
 image_for_vis = HighresReferenceImage;
@@ -50,9 +110,9 @@ try
     load([ref_mask_path,'/RefMask.mat']);
 catch
     if NumberOfSpatialDims == 3
-        mask_coronal=Poly2Binary(handle_coronal(image_for_vis));
-        mask_sagittal=Poly2Binary(handle_sagittal(image_for_vis));
-        mask_transverse=Poly2Binary(handle_transverse(image_for_vis));
+        mask_coronal=Poly2Binary(param_struct.postprocessing.handle_coronal(image_for_vis));
+        mask_sagittal=Poly2Binary(param_struct.postprocessing.handle_sagittal(image_for_vis));
+        mask_transverse=Poly2Binary(param_struct.postprocessing.handle_transverse(image_for_vis));
         save([ref_mask_path,'/RefMask.mat'],'mask_sagittal','mask_transverse','mask_coronal');
     else
         RefMask = Poly2Binary(image_for_vis);
@@ -77,16 +137,16 @@ if param_struct.postprocessing.JacDeterminantsFlag
     end
 
 
-    % Select indices to visualize determinant maps for
-    [minimum_motion_index] = 1;%min(sum(abs(Psi),2),[],1);
-    [maximum_motion_index] = 5;%max(sum(abs(Psi),2),[],1);
+    % Select indices to visualize determinant maps for; dynamics with min and max motion in FH direction
+    [~,minimum_motion_index] = min(squeeze(sum(MF(:,end,:),1)),[],1);
+    [~,maximum_motion_index] = max(squeeze(sum(MF(:,end,:),1)),[],1);
     max_ip_det = squeeze(abs(det_rc(:,:,:,maximum_motion_index)));
     min_ip_det = squeeze(abs(det_rc(:,:,:,minimum_motion_index)));
 
 
     % Some visualization parameters [don't touch]
     determinant_scale = [0 2];
-    alpha_ = 0.5;
+    alpha_ = .5;
 
     if NumberOfSpatialDims == 3
         fig1=figure('Renderer', 'painters');    
@@ -95,14 +155,14 @@ if param_struct.postprocessing.JacDeterminantsFlag
         ha = tight_subplot(2,3,[.07 -.01],[.1 .1],[.22 .29]);
 
         % #1
-        PlotOverlayedImage( param_struct.postprocessing.crop_coronal(handle_coronal(image_for_vis).*mask_coronal),param_struct.postprocessing.crop_coronal(handle_coronal(max_ip_det).*mask_coronal),alpha_,ha(1),determinant_scale,-0.02,1)
-        PlotOverlayedImage( param_struct.postprocessing.crop_sagittal(handle_sagittal(image_for_vis).*mask_sagittal),param_struct.postprocessing.crop_sagittal(handle_sagittal(max_ip_det).*mask_sagittal),alpha_,ha(2),determinant_scale)
-        PlotOverlayedImage( param_struct.postprocessing.crop_transverse(handle_transverse(image_for_vis).*mask_transverse),param_struct.postprocessing.crop_transverse(handle_transverse(max_ip_det).*mask_transverse),alpha_,ha(3),determinant_scale)
+        PlotOverlayedImage( param_struct.postprocessing.crop_coronal(param_struct.postprocessing.handle_coronal(image_for_vis).*mask_coronal),param_struct.postprocessing.crop_coronal(param_struct.postprocessing.handle_coronal(max_ip_det).*mask_coronal),alpha_,ha(1),determinant_scale,-0.02,1)
+        PlotOverlayedImage( param_struct.postprocessing.crop_sagittal(param_struct.postprocessing.handle_sagittal(image_for_vis).*mask_sagittal),param_struct.postprocessing.crop_sagittal(param_struct.postprocessing.handle_sagittal(max_ip_det).*mask_sagittal),alpha_,ha(2),determinant_scale)
+        PlotOverlayedImage( param_struct.postprocessing.crop_transverse(param_struct.postprocessing.handle_transverse(image_for_vis).*mask_transverse),param_struct.postprocessing.crop_transverse(param_struct.postprocessing.handle_transverse(max_ip_det).*mask_transverse),alpha_,ha(3),determinant_scale)
 
         % #2
-        PlotOverlayedImage( param_struct.postprocessing.crop_coronal(handle_coronal(image_for_vis).*mask_coronal),param_struct.postprocessing.crop_coronal(handle_coronal(min_ip_det).*mask_coronal),alpha_,ha(4),determinant_scale,-0.02,1)
-        PlotOverlayedImage( param_struct.postprocessing.crop_sagittal(handle_sagittal(image_for_vis).*mask_sagittal),param_struct.postprocessing.crop_sagittal(handle_sagittal(min_ip_det).*mask_sagittal),alpha_,ha(5),determinant_scale)
-        PlotOverlayedImage( param_struct.postprocessing.crop_transverse(handle_transverse(image_for_vis).*mask_transverse),param_struct.postprocessing.crop_transverse(handle_transverse(min_ip_det).*mask_transverse),alpha_,ha(6),determinant_scale)
+        PlotOverlayedImage( param_struct.postprocessing.crop_coronal(param_struct.postprocessing.handle_coronal(image_for_vis).*mask_coronal),param_struct.postprocessing.crop_coronal(param_struct.postprocessing.handle_coronal(min_ip_det).*mask_coronal),alpha_,ha(4),determinant_scale,-0.02,1)
+        PlotOverlayedImage( param_struct.postprocessing.crop_sagittal(param_struct.postprocessing.handle_sagittal(image_for_vis).*mask_sagittal),param_struct.postprocessing.crop_sagittal(param_struct.postprocessing.handle_sagittal(min_ip_det).*mask_sagittal),alpha_,ha(5),determinant_scale)
+        PlotOverlayedImage( param_struct.postprocessing.crop_transverse(param_struct.postprocessing.handle_transverse(image_for_vis).*mask_transverse),param_struct.postprocessing.crop_transverse(param_struct.postprocessing.handle_transverse(min_ip_det).*mask_transverse),alpha_,ha(6),determinant_scale)
     else
         fig1=figure('Renderer', 'painters');
         set_background_black;
@@ -124,6 +184,17 @@ end
 
 %% Motion image overlay
 
+if param_struct.RespResolvedReconstruction
+    delay_time = 4/no_dyns;
+else
+    delay_time = param_struct.ReadoutsPerDynamic*4.4e-3;
+end
+
+for i=1:no_dyns;text_num{i}=[num2str(delay_time*1000*(i-1)),' ms'];end
+text_num = strjust(pad(text_num),'right');
+for i=1:no_dyns;text{i} = ['  Time: ',text_num{i}];end
+
+
 if param_struct.postprocessing.MotionImageOverlayFlag
     disp('=== Overlaying motion-fields on warped reference image... ===')
 
@@ -131,7 +202,7 @@ if param_struct.postprocessing.MotionImageOverlayFlag
     % the determinant visualization
     MF_highres = UpscaleMotionFields(MF,ImDim,ImDim_vis);
     clearvars MF_new;
-    max_for_gif = min(param_struct.NumberOfDynamics,800);
+    max_for_gif = min(no_dyns,800);
 
     if param_struct.postprocessing.HighresVisualizationFlag ==1
         display_factor = 3;     % downsampling factor of motion-field for visualization
@@ -142,62 +213,71 @@ if param_struct.postprocessing.MotionImageOverlayFlag
     threshold       = -10;      % threshold for visualization
     color           = 'g';      % color of motion-field
     padding         = 10;       % boundary to remove 
-    scaling         = 1.3;      % scaling for visualizion
+    scaling         = 1.4;      % scaling for visualizion
 
     if NumberOfSpatialDims == 3
         % coronal
         dimension       = 1;
         slice           = param_struct.postprocessing.cor_slice;
         rotations       = 1;
-        [images_coronal,cm_coronal]=MotionImageOverlay_3Dt(result(:,:,:,1:max_for_gif),MF_highres,dimension,slice,threshold,display_factor,color,padding,scaling,rotations,mask_coronal);
+        [images_coronal,cm_coronal]=MotionImageOverlay_3Dt(result(:,:,:,:,1:max_for_gif),MF_highres,dimension,slice,threshold,display_factor,color,padding,scaling,rotations,rot90(mask_coronal,rotations+3));
 
+        file_name = [param_struct.export_folder,'images_coronal',param_struct.export_suffix,'.gif'];
+        CellsToGif(images_coronal,cm_coronal,delay_time,file_name)
+
+        
         % sagittal
         dimension       = 2;
         slice           = param_struct.postprocessing.sag_slice;
         rotations       = 1;
-        [images_sagittal,cm_sagittal]=MotionImageOverlay_3Dt(result(:,:,:,1:max_for_gif),MF_highres,dimension,slice,threshold,display_factor,color,padding,scaling,rotations,mask_sagittal);
+        [images_sagittal,cm_sagittal]=MotionImageOverlay_3Dt(result(:,:,:,:,1:max_for_gif),MF_highres,dimension,slice,threshold,display_factor,color,padding,scaling,rotations,rot90(mask_sagittal,3+rotations));
+        
+        file_name = [param_struct.export_folder,'images_sagittal',param_struct.export_suffix,'.gif'];
+        CellsToGif(images_sagittal,cm_sagittal,delay_time,file_name)
 
+        
         % axial
         dimension       = 3;
         slice           = param_struct.postprocessing.trans_slice;
         rotations       = 0;
-        [images_axial,cm_axial]=MotionImageOverlay_3Dt(result(:,:,:,:,1:max_for_gif),MF_highres,dimension,slice,threshold,display_factor,color,padding,scaling,rotations,mask_transverse);
+        [images_axial,cm_axial]=MotionImageOverlay_3Dt(result(:,:,:,:,1:max_for_gif),MF_highres,dimension,slice,threshold,display_factor,color,padding,scaling,rotations,rot90(mask_transverse,rotations));
 
-        close all;
+        file_name = [param_struct.export_folder,'images_axial',param_struct.export_suffix,'.gif'];
+        CellsToGif(images_axial,cm_axial,delay_time,file_name)
+        
+        
 
+        
+
+        
         
 
     else
         
-        MF_highres = param_struct.postprocessing.visualization_handle_noabs(reshape(MF_highres,ImDim_vis,ImDim_vis,NumberOfSpatialDims,param_struct.NumberOfDynamics));
+        MF_highres = param_struct.postprocessing.visualization_handle_noabs(reshape(MF_highres,ImDim_vis,ImDim_vis,NumberOfSpatialDims,no_dyns));
         clearvars mf_new;
-        max_for_gif = min(param_struct.NumberOfDynamics,800);
+        max_for_gif = min(no_dyns,800);
         for i=1:max_for_gif
             for j=1:size(MF_highres,3)
                 mf_new{i}(:,:,j)=MF_highres(:,:,j,i);
             end
+            
+            
         end
 
         % Overlay motion-fields as vector-field on warped reference images
         [a,b]=MotionImageOverlay_2Dt(visualization_handle_abs((abs(result(:,:,:,:,1:max_for_gif))).^(4/5)),mf_new,-10,3,'g',10,1,0,visualization_handle_abs(RefMask));
 
+        
+        % Export resulting images as GIF
+        CellsToGif(a,b,delay_time,[param_struct.export_folder,'/MotionImageOverlay',param_struct.export_suffix,'.gif'],text)
+
         close all;
     end
+ 
     
 
-    if param_struct.RespResolvedReconstruction
-        delay_time = 4/param_struct.NumberOfDynamics;
-    else
-        delay_time = param_struct.ReadoutsPerDynamic*5e-3;
-    end
-
-    for i=1:param_struct.NumberOfDynamics;text_num{i}=[num2str(round(4/20*1000*(i-1))),' ms'];end
-    text_num = strjust(pad(text_num),'right');
-    for i=1:param_struct.NumberOfDynamics;text{i} = ['  Time: ',text_num{i}];end
-
     
-    % Export resulting images as GIF
-    CellsToGif(a,b,param_struct.ReadoutsPerDynamic*1e-5,[param_struct.export_folder,'/MotionImageOverlay',param_struct.export_suffix,'.gif'],text)
 
 
 end

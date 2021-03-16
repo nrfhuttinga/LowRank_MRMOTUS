@@ -24,7 +24,9 @@ disp('=== Postprocessing... ===')
 % Constructing motion-fields from low-rank components:
 % [Note: may take a large amount of RAM in 3D+t]
 mf = reshape(Phi*Psi.',[],MRMOTUS_recon.NumberOfSpatialDims,MRMOTUS_recon.NumberOfDynamics);
-MRMOTUS_PostProcessing(mf, param_struct);
+
+
+WarpedReferenceImage=MRMOTUS_PostProcessing(mf, param_struct);
 
 %%
 

@@ -13,9 +13,17 @@ if nargin < 2 || isempty(d)
 end
 
 % other dimension than d
+
+
 d_2 = find(size(SliceData(X,d,1))~=1);
 
+
+if isempty(d_2)
+    d_2 = 2;
+end
+
 L = sx(d);
+
 for i=1:sx(d_2)
     Y = fft(SliceData(X,d_2,i),[],d);
     P2 = abs(Y/L);
@@ -24,6 +32,8 @@ for i=1:sx(d_2)
     f = Fs*(0:round(L/2))/L;
 end
 
-if d==1
+
+
+if d==1 
     P1 = permute(P1,[2 1]);
 end

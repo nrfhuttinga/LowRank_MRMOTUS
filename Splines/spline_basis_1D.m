@@ -20,13 +20,15 @@ if DerivativeOrder > 2
     error('Order > 2 not implemented')
 end
 
+% leave to 4 for cubic splines, determines the number of control points that influences every point in the representation
+control_point_overlaps=4;
+
 % this ensures every spline function has - along a certain dimension - only
-% overlap with two other splines along that dimension
-number_of_nonoverlapping_splines = (SplineOrder - 1)/4;
+% overlap with four other splines along that dimension
+number_of_nonoverlapping_splines = (SplineOrder - 1)/control_point_overlaps;
 
 % every spline function is defined on the interval [-2 2], with length 4
 spline_fov = number_of_nonoverlapping_splines*4;
-% spline_fov = ceil((spline_order - 2)/2)*4;
 
 
 % specify the center for each spline function along the fov

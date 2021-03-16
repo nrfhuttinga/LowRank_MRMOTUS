@@ -88,7 +88,7 @@ function [imgs_out,cm] = MotionImageOverlay_2Dt(Images,motionFields,varargin)
 
 
         for i=1:dynamics
-            mf_new(:,:,:,1)=motionFields{i}(:,:,2);
+            mf_new(:,:,:,1)=-motionFields{i}(:,:,2);
             mf_new(:,:,:,2)=-motionFields{i}(:,:,1);
             motionFields{i}=rot90(mf_new,rotations);
         end
@@ -126,7 +126,15 @@ function [imgs_out,cm] = MotionImageOverlay_2Dt(Images,motionFields,varargin)
             motionFields{i}=rot90(mf_new,rotations);
         end   
 
+    elseif rotations == 0
+        for i=1:dynamics
+            motionFields{i}(:,:,2) = -motionFields{i}(:,:,2);
+            motionFields{i}(:,:,1) = -motionFields{i}(:,:,1);
+
+        end
     end
+    
+    
 
 
     [dim2,dim1,~]=size(Images);

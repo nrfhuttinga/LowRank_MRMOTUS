@@ -100,7 +100,7 @@ function [imgs_out,cm] = MotionImageOverlay_3Dt(Images,motionFields,dimension,sl
 
         Image = squeeze(Images(:,:,:,i));
 
-        [dvf{i},image(:,:,i)] = ExtractSlices_3D(Image,mf,dimension,slice);
+        [dvf{i},image(:,:,:,:,i)] = ExtractSlices_3D(Image,mf,dimension,slice);
 
 
 
