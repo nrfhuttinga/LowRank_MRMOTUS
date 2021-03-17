@@ -3,22 +3,24 @@ function f1=slicer5d(data,aspect,varargin)
 %
 % INPUT:    - data (>=2D, with channels as 4th dimension and time as 5th dimension)
 %           - aspect ratio in vector format (eg: [1 1 3] if z is 3 times 
-%           larger than x and y. (didn't check 5D support yet)
+%           larger than x and y. (didn't check 5D support for aspect ratio)
 %
 % OUTPUT:   Currently no output is defined.
 %
 % Functionality
-%   - Clicking activates current viewport/subplot
-%   - Scrolling lets you skip through slices the active viewport
-%   - Right clicking in the image creates a crosshair. The value at this
-%   point is reported above the 4th viewport/subplot. In case of >3D data
-%   this subplot will also show the signal evolution in the 5th dimension
-%   (eg, the time series) of the point at the crosshair.
-%   - Vertical left-mouse/scroll-button dragging changes the display of the 
-%   4th/5th dimension in the image. The currently displayed data is 
-%   indicated by an asterisk in the plot of the timeseries. (>3D data only)
-%   - Arrow buttons scale the image (all viewports simultaneously)
-% 
+%   -   Clicking activates current viewport/subplot
+%   -   3rd dimension can be skipped through by scrolling the mouse wheel
+%   -   4th and 5th dimensions can be skipped through with vertical 
+%       left-mouse/scroll-button dragging
+%   -   Right clicking in the image creates a crosshair. The value at this
+%       point is reported above the 4th viewport/subplot. In case of >3D data
+%       this subplot will also show the signal evolution in the 5th dimension
+%       (eg, the time series) of the point at the crosshair.
+%   -   The currently displayed data is indicated by an asterisk in the plot 
+%       of the timeseries. (>3D data only)
+%   -   Arrow buttons scale the image (all viewports simultaneously)
+
+
 % v1.0 July 2014
 % Tim Schakel, Frank Simonis, Bjorn Stemkens.
 %

@@ -128,8 +128,8 @@ function [imgs_out,cm] = MotionImageOverlay_2Dt(Images,motionFields,varargin)
 
     elseif rotations == 0
         for i=1:dynamics
-            motionFields{i}(:,:,2) = -motionFields{i}(:,:,2);
-            motionFields{i}(:,:,1) = -motionFields{i}(:,:,1);
+            motionFields{i}(:,:,2) = motionFields{i}(:,:,2);
+            motionFields{i}(:,:,1) = motionFields{i}(:,:,1);
 
         end
     end
@@ -164,7 +164,7 @@ function [imgs_out,cm] = MotionImageOverlay_2Dt(Images,motionFields,varargin)
 
 
         if im_auto_scale == 1
-            imagesc(xlimit,ylimit,abs(Image),[0 max(abs(Image(:)))]);
+            imagesc(xlimit,ylimit,abs(Image),[0 mean(max(abs(Images),[],[1,2])*0.9)]);
         else
             imagesc(xlimit,ylimit,abs(Image),[0 im_auto_scale]);
         end

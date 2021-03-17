@@ -220,7 +220,7 @@ if param_struct.postprocessing.MotionImageOverlayFlag
         dimension       = 1;
         slice           = param_struct.postprocessing.cor_slice;
         rotations       = 1;
-        [images_coronal,cm_coronal]=MotionImageOverlay_3Dt(result(:,:,:,:,1:max_for_gif),MF_highres,dimension,slice,threshold,display_factor,color,padding,scaling,rotations,rot90(mask_coronal,rotations+3));
+        [images_coronal,cm_coronal]=MotionImageOverlay_3Dt(result(:,:,:,:,1:max_for_gif).^(4/5),MF_highres,dimension,slice,threshold,display_factor,color,padding,scaling,rotations,rot90(mask_coronal,rotations+3));
 
         file_name = [param_struct.export_folder,'images_coronal',param_struct.export_suffix,'.gif'];
         CellsToGif(images_coronal,cm_coronal,delay_time,file_name)
@@ -230,7 +230,7 @@ if param_struct.postprocessing.MotionImageOverlayFlag
         dimension       = 2;
         slice           = param_struct.postprocessing.sag_slice;
         rotations       = 1;
-        [images_sagittal,cm_sagittal]=MotionImageOverlay_3Dt(result(:,:,:,:,1:max_for_gif),MF_highres,dimension,slice,threshold,display_factor,color,padding,scaling,rotations,rot90(mask_sagittal,3+rotations));
+        [images_sagittal,cm_sagittal]=MotionImageOverlay_3Dt(result(:,:,:,:,1:max_for_gif).^(4/5),MF_highres,dimension,slice,threshold,display_factor,color,padding,scaling,rotations,rot90(mask_sagittal,3+rotations));
         
         file_name = [param_struct.export_folder,'images_sagittal',param_struct.export_suffix,'.gif'];
         CellsToGif(images_sagittal,cm_sagittal,delay_time,file_name)
@@ -240,7 +240,7 @@ if param_struct.postprocessing.MotionImageOverlayFlag
         dimension       = 3;
         slice           = param_struct.postprocessing.trans_slice;
         rotations       = 0;
-        [images_axial,cm_axial]=MotionImageOverlay_3Dt(result(:,:,:,:,1:max_for_gif),MF_highres,dimension,slice,threshold,display_factor,color,padding,scaling,rotations,rot90(mask_transverse,rotations));
+        [images_axial,cm_axial]=MotionImageOverlay_3Dt(result(:,:,:,:,1:max_for_gif).^(4/5),-MF_highres,dimension,slice,threshold,display_factor,color,padding,scaling,rotations,rot90(mask_transverse,rotations));
 
         file_name = [param_struct.export_folder,'images_axial',param_struct.export_suffix,'.gif'];
         CellsToGif(images_axial,cm_axial,delay_time,file_name)

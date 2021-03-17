@@ -22,7 +22,7 @@ function CellsToGif(ImageCell,ColormapCell,varargin)
     if grayscale
         for i=1:numel(ImageCell)
     %         rsz = imresize(ImageCell{i},[ims,ims]);
-            Images(:,:,i) = ImageCell{i};
+            Images(:,:,i) = imresize(ImageCell{i},[ims,ims]);
     %         Images(:,:,i) = demax(Images(:,:,i))*
         end
     else

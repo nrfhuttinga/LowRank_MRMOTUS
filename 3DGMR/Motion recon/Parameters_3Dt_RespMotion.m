@@ -20,14 +20,14 @@ param_struct.ReadoutsPerDynamic             = 31;           % Number of readouts
 
 % Specify reconstruction parameters
 param_struct.lambda_det                     = 0;            % Jacobian determinant regularization parameter
-param_struct.lambda_TV                      = 4e-8;         % TV regularization parameter
+param_struct.lambda_TV                      = .5e-8;         % TV regularization parameter
 param_struct.eps_TV                         = 1e1;          % epsilon for smooth TV approximation
 param_struct.ParallelComputationFlag        = 1;            % Parallel computations or not [0 / 1]
     param_struct.NumberOfThreads            = 4;            % Number of threads used in parallel pool
 param_struct.NumberOfReconIterations        = 60;           % Number of iterations in reconstruction
 param_struct.lbfgs_termination_threshold    = 5e11;         % Threshold for reconstructions (higher threshold = lower accuracy = earlier stopping)
 param_struct.PreconditionParam              = 1/2;          % Power to which to raise the precondition matrix (don't touch)
-param_struct.NumberOfComponents             = 1;            % Number of components in the low-rank motion model
+param_struct.NumberOfComponents             = 2;            % Number of components in the low-rank motion model
 
     
 % Parameters for the spline bases
