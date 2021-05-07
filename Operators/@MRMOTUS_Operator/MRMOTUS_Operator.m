@@ -38,12 +38,13 @@ classdef MRMOTUS_Operator
             % Constructor.
             %
             % Inputs:
-            %   ReferenceImage          - Complex reference image [N^3 x 1]
-            %   KspaceTrajectory        - Kspace trajectory for the forward model [#readout_samples x 2/3 x interleaves]
+            %   ReferenceImage          - Complex reference image [N^d x 1]
+            %   KspaceTrajectory        - Kspace trajectory for the forward model [#readout_samples x d x interleaves]
             %   param_struct            - All parameters specified in the example parameter files, e.g. 'Parameters_2Dt_RespMotion.m'
             
             disp('=== Initializing MR-MOTUS Operator object ===')
 
+            ReferenceImage = ReferenceImage(:);
             
             % set internal parameters - don't touch
             obj.KspaceTrajectory        = KspaceTrajectory;
@@ -58,7 +59,7 @@ classdef MRMOTUS_Operator
             disp(['+Detected ',num2str(obj.NumberOfSpatialDims),'D data']);
             
             % initialize all required components
-            obj = obj.initialize_spline_bases();
+            obj = obj.initialize_bases();
             obj = obj.initialize_solution_variables();
             obj = obj.initialize_regularization();
             obj = obj.initialize_parallel_computation();
@@ -354,6 +355,287 @@ classdef MRMOTUS_Operator
         end % end forward_and_gradient_lowrank
 
         
+        %% Forward and gradient - multi dynamic & low-rank
+        function [ObjfuncValue,Gradient,ForwardSignal,DvfOperator] = forward_and_gradient_affinespline(obj,AffineSplineMotionFieldCoefficients,KspaceData)
+            % Main function to perform lowrank MR-MOTUS: returns objective funtion value and gradients
+            %
+            % Inputs
+            %   AffineSplineMotionFieldCoefficients: (d+1)*num_temp_splines x d
+            %
+            %   KspaceData                  - target kspace data to compute residuals [#readoutsamples x #interleaves]
+            %
+            % Outputs
+            %   ObjfuncValue                - Objective function value 0.5*|| F(MotionFieldCoefficients) - KspaceData||_2^2
+            %   Gradient                    - Gradient of the objective function w.r.t. MotionFieldCoefficients (see code for size specifications)
+            %   ForwardSignal               - F(MotionFieldCoefficients)
+            %   DvfOperator                 - Cell with MotionFieldOperator objects for each dynamic
+            
+
+            
+            [Phi,PsiT,TimeDepAffineMatrix] = obj.ExpandMotionfieldCoefficientsAffineSpline(AffineSplineMotionFieldCoefficients);
+            
+            
+           
+
+            lowrankstart=tic;
+            
+            
+                
+            
+            %% Initialize...
+       
+            ForwardSignal               = zeros(size(KspaceData));
+            % - Gradient of objective function w.r.t. ALL cubic B-spline coefficients, i.e. [dE/d(alpha);dE/d(beta)]
+            % - Size: (d*N_phi + N_psi)*R
+            Gradient                    = zeros([numel(AffineSplineMotionFieldCoefficients),1]);
+            % - Gradient of objective function w.r.t. spatial cubic B-spline coefficients, i.e. dE/d(alpha)
+            % - Size: d*N_phi*R x 1
+            % Set to zero to check if regularizations produce correct
+            % results:
+            data_fid_lambda             = 1;
+            % - Objective function values: total=data_fid + reg, data fidelity, regularization
+            ObjfuncValue                = 0;
+            ObjfuncValueDataFid         = zeros(obj.NumberOfDynamics,1);
+            ObjfuncValueRegDynamic      = zeros(obj.NumberOfDynamics,1);
+                
+            
+            
+            
+            % Make sure MATLAB doesn't broadcast the complete object, i.e.
+            % don't make a copy for every worker:
+            KspaceTrajectory        = obj.KspaceTrajectory;
+            PreconditionMatrix      = obj.PreconditionMatrix;
+            NumberOfDynamics        = obj.NumberOfDynamics;
+            ReferenceGrid           = obj.ReferenceGrid;
+            NumberOfComponents      = 3;
+            NumberOfSpatialDims     = obj.NumberOfSpatialDims;
+            RegularizationOptions   = obj.RegularizationOptions;
+            referenceImageMask      = obj.referenceImageMask;
+            RegularizationFlag      = obj.RegularizationFlag;
+            static_transfer_struct  = obj.static_transfer_struct;
+            static_reg_struct       = obj.static_reg_struct;
+            fwd_and_gradient        = @ MRMOTUS_Operator.forward_and_gradient_singledynamic;
+            fwd_grad_reg            = @ MRMOTUS_Operator.forward_and_gradient_regularization_singledynamic;
+            ParallelComputationFlag = obj.param_struct.ParallelComputationFlag;
+            
+            % objective function scalings - don't touch
+            scaling_reg             = 1e4/NumberOfDynamics;
+            scaling_datafid = 0;
+            for i=1:obj.NumberOfDynamics
+                scaling_datafid        = scaling_datafid + norm(obj.PreconditionMatrix{i}*KspaceData(:,i))^2;
+            end
+            scaling_datafid = 1/sqrt(scaling_datafid)*1e4;
+            
+            
+           
+            
+
+
+            
+            %% Main computation block
+            
+            % computations in serie
+            if ~obj.param_struct.ParallelComputationFlag
+             
+                % loop over all dynamics
+                for dynamic = 1:obj.NumberOfDynamics 
+
+
+                   % compute motion-field for this dynamic
+                    MotionField_current                         = reshape(Phi*PsiT(:,:,dynamic),size(ReferenceGrid)) - ReferenceGrid;
+                    
+                    % compute obj and gradient value for this dynamic
+                    % w.r.t. complete motion-field
+                    [ObjfuncValueDynamic,GradientDvfDynamic,ForwardSignal(:,dynamic),DvfOperator{dynamic}] = fwd_and_gradient(MotionField_current,squeeze(KspaceTrajectory(:,:,dynamic)),KspaceData(:,dynamic),PreconditionMatrix{dynamic},static_transfer_struct,ParallelComputationFlag);
+                    ObjfuncValueDynamic = ObjfuncValueDynamic       * data_fid_lambda * scaling_datafid;
+                    GradientDvfDynamic  = GradientDvfDynamic        * data_fid_lambda * scaling_datafid;
+                    
+                    % seperate complete gradient to phi and psi components
+                    GradientPsiT(:,:,dynamic)                     = Phi'*GradientDvfDynamic;
+                    
+                    ObjfuncValueDataFid(dynamic) = ObjfuncValueDynamic;                             
+
+                    
+                    if ~isempty(obj.RegularizationFlag) && obj.RegularizationFlag
+                        
+                        % Compute 'effective' spatial coefficients alpha * Psi(:,t)^T for this dynamics
+                        TotalCoefficients_rshp = reshape(SpatialCoefficients_rshp2*PsiT(:,dynamic),[],NumberOfSpatialDims);
+                        
+                        % Compute the regularization function value R(D_t) and gradient dR/dD_t
+                        [RegValueDynamic,RegGradientDvfDynamic] = fwd_grad_reg(TotalCoefficients_rshp, RegularizationOptions,static_reg_struct,ParallelComputationFlag); 
+                        
+                        % Update internal objective function value
+                        ObjfuncValueRegDynamic(dynamic) = RegValueDynamic                                                           * scaling_reg;
+                        
+                        % Compute dR/d(alpha) and dR/d(Psi^T) from dR/D_t
+                        GradientPhiCoeff = GradientPhiCoeff + kron(PsiT(:,dynamic),RegGradientDvfDynamic(:))                        * scaling_reg;
+                        GradientPsiT(:,dynamic) = GradientPsiT(:,dynamic) + SpatialCoefficients_rshp2.'*RegGradientDvfDynamic(:)    * scaling_reg;
+                    end
+                    
+                end           
+                
+            % computations in parallel
+            else
+%                 spe = speye(size(PreconditionMatrix{1},1),size(PreconditionMatrix{1},1));
+                a=1;
+                % loop over all dynamics
+                parallel_reg = 1;
+                parfor dynamic = 1:obj.NumberOfDynamics % some notes: matlab transfers all variables in the loop, regardless of whether they are accessed or within if statements
+                    
+                    
+                    % compute motion-field for this dynamic
+                    MotionField_current                         = reshape(Phi*PsiT(:,:,dynamic),size(ReferenceGrid)) - ReferenceGrid;
+                    
+                    % compute obj and gradient value for this dynamic
+                    % w.r.t. complete motion-field
+                    [ObjfuncValueDynamic,GradientDvfDynamic,ForwardSignal(:,dynamic),DvfOperator{dynamic}] = fwd_and_gradient(MotionField_current,squeeze(KspaceTrajectory(:,:,dynamic)),KspaceData(:,dynamic),PreconditionMatrix{dynamic},static_transfer_struct,ParallelComputationFlag);
+                    ObjfuncValueDynamic = ObjfuncValueDynamic       * data_fid_lambda * scaling_datafid;
+                    GradientDvfDynamic  = GradientDvfDynamic     * data_fid_lambda * scaling_datafid;
+                    
+                    % seperate complete gradient to phi and psi components
+                    GradientPsiT(:,dynamic)                     = Phi'*GradientDvfDynamic;
+                    
+                    % update obj. function value
+                    ObjfuncValueDataFid(dynamic) = ObjfuncValueDynamic;                             
+                    
+                    if RegularizationFlag && parallel_reg
+                        
+                        % Compute 'effective' spatial coefficients alpha * Psi(:,t)^T for this dynamics
+                        TotalCoefficients_rshp = reshape(SpatialCoefficients_rshp2*PsiT(:,dynamic),[],NumberOfSpatialDims);
+                        % Compute the regularization function value R(D_t) and gradient dR/dD_t
+                        [RegValueDynamic,RegGradientDvfDynamic] = fwd_grad_reg(TotalCoefficients_rshp, RegularizationOptions,static_reg_struct,ParallelComputationFlag); 
+                        
+                        % Update internal objective function value
+                        ObjfuncValueRegDynamic(dynamic) = RegValueDynamic            * scaling_reg;
+
+                        
+                        % Compute dR/d(alpha) and dR/d(Psi^T) from dR/D_t
+                        regradient_rshp = reshape(RegGradientDvfDynamic,[],1)        * scaling_reg;
+                         
+                        GradientPhiCoeff = GradientPhiCoeff + reshape(regradient_rshp*Psi(dynamic,:),[],1);
+                        GradientPsiT(:,dynamic) = GradientPsiT(:,dynamic) + SpatialCoefficients_rshp2.'* regradient_rshp;
+                    end
+
+                    
+              
+                end
+                
+%                 % Note: regularization can also be done outside parfor loop, this is faster in some cases
+%                 % to use this uncomment the if-block below, and comment the if-block above in the parfor loop.
+%                 if RegularizationFlag 
+% 
+%                     % Compute 'effective' spatial coefficients alpha * Psi^T
+%                     TotalCoefficients_rshp = reshape(SpatialCoefficients_rshp2*PsiT(:,:),[],NumberOfSpatialDims,NumberOfDynamics);
+% 
+%                     % Compute the regularization function value R(D_t) and gradient dR/dD_t
+%                     [RegValueDynamic,RegGradientDvfDynamic] = fwd_grad_reg(TotalCoefficients_rshp, RegularizationOptions,static_reg_struct,ParallelComputationFlag); 
+% 
+%                     % Update internal objective function value
+%                     ObjfuncValueRegDynamic = RegValueDynamic                                    * scaling_reg;
+% 
+%                     % Compute dR/d(alpha) and dR/d(Psi^T) from dR/D_t
+%                     regradient_rshp = reshape(RegGradientDvfDynamic,[],NumberOfDynamics)        * scaling_reg;
+% 
+%                     GradientPhiCoeff = GradientPhiCoeff + reshape(regradient_rshp*Psi,[],1);
+%                     GradientPsiT = GradientPsiT + SpatialCoefficients_rshp2.'* regradient_rshp;
+% 
+% 
+%                 end
+
+               
+            end
+            
+                          
+            %% Project gradients on the cubic B-spline coefficients, and collect everything in one vector
+            
+            % Psi
+            Gradient = Gradient + reshape(permute(squeeze(mtimesx(obj.TemporalBasis,'c',permute(GradientPsiT,[3 1 2]))),[2 1 3]),[],1);
+            
+
+            %% Compute objective function value
+            ObjfuncValue = sum(ObjfuncValueDataFid) + sum(ObjfuncValueRegDynamic);
+            
+            %% Write some feedback to the terminal
+            fprintf('f(x) = %14.6e, D(x) = %14.6e , R(x) = %14.6e, ||G_phi||_infty = %14.6e, ||G_psi||_infty = %14.6e , ||G||_infty = %14.6e \n', ...
+            ObjfuncValue,...
+            sum(ObjfuncValueDataFid),...
+            sum(ObjfuncValueRegDynamic),...
+            norm(Gradient(1:obj.Ncoefficients_spatial,1),'inf'),...
+            norm(Gradient(obj.Ncoefficients_spatial+1:end,1),'inf'), ...
+            norm(Gradient(:),'inf'))  ;
+            
+            
+            
+            %% Visual feedback
+%             if obj.param_struct.VisualizationFlag
+%                 for rr=1:obj.param_struct.NumberOfComponents
+%                     viss = reshape(Phi(:,rr),[ones(1,obj.NumberOfSpatialDims)*obj.ImDims,obj.NumberOfSpatialDims,1]);
+%                     vis(:,:,:,rr) = ((abs((sqrt(sum(viss.^2,obj.NumberOfSpatialDims+1:numel(size(viss))))))));
+%                 end
+%                 try
+%                     figure(91),
+%                     subplot(4,3,1);plot(abs(ForwardSignal(1:300,1)));xlabel('Sample index');ylabel('Magnitude [a.u.]');title('Forward model vs. Kspace data');hold on;
+%                     plot(abs(KspaceData(1:300)));hold off;legend('forward model','kspace data');
+%                     subplot(4,3,2),plot(PsiT.');title('Temporal profiles');legend;xlabel('Dynamic index');ylabel('Magnitude [a.u.]');
+% 
+%                     if obj.NumberOfSpatialDims==3
+%                         subplot(4,3,4);imagesc(rot90(squeeze(vis(:,end/2,:,1)),1));axis image;colormap gray; axis off;colorbar;title('Spatial component 1 - Sagittal')
+%                         subplot(4,3,5);imagesc(rot90(squeeze(vis(:,:,end/2,1)),0));axis image;colormap gray; axis off;colorbar;title('Spatial component 1 - Axial')
+%                         subplot(4,3,6);imagesc(rot90(squeeze(vis(end/2,:,:,1)),1));axis image;colormap gray; axis off;colorbar;title('Spatial component 1 - Coronal')
+%                         subplot(4,3,3);plot(MotionFieldCoefficients{1}(:));title('Spline coefficients');xlabel('Coefficient index');ylabel('Magnitude [a.u.]');
+%                         if obj.param_struct.NumberOfComponents > 1
+%                             
+%                             for i=1:min(2,(obj.param_struct.NumberOfComponents-1))
+%                                 subplot(4,3,7+(i-1)*3);imagesc(rot90(squeeze(vis(:,end/2,:,i+1)),1));axis image;colormap gray; axis off;colorbar;title(['Spatial component ',num2str(i+1),' - Sagittal'])
+%                                 subplot(4,3,8+(i-1)*3);imagesc(rot90(squeeze(vis(:,:,end/2,i+1)),0));axis image;colormap gray; axis off;colorbar;title(['Spatial component ',num2str(i+1),' - Axial'])
+%                                 subplot(4,3,9+(i-1)*3);imagesc(rot90(squeeze(vis(end/2,:,:,i+1)),1));axis image;colormap gray; axis off;colorbar;title(['Spatial component ',num2str(i+1),' - Coronal'])
+%                             end
+%                         end
+%                     else
+%                         subplot(4,3,3);plot(MotionFieldCoefficients{1}(:));title('Spline coefficients');xlabel('Coefficient index');ylabel('Magnitude [a.u.]');
+% 
+%                         for i=0:min(5,obj.param_struct.NumberOfComponents-1)
+%                             subplot(4,3,4+i);imagesc(rot90(squeeze(vis(:,:,:,i+1)),0));axis image;colormap gray; axis off;colorbar;title(['Spatial component ',num2str(i+1)])
+%                         end
+% 
+%                     end
+% 
+%                     set_figure_fullscreen;
+%                     drawnow;
+% 
+%                 
+%                 catch
+%                     warning('Caught an error in the visualization');
+%                 end
+%             end
+            
+        toc(lowrankstart)
+        end % end forward_and_gradient_affinespline
+        
+        %% Expand motion field coefficients with affine (x) spline basis
+        function [Phi, TimeDepAffineCoeff, TimeDepAffineMatrix]=ExpandMotionfieldCoefficientsAffineSpline(obj,AffineSplineMotionFieldCoefficients)
+            % Inputs:
+            %   - AffineSplineMotionFieldCoefficients: (d+1)*num_temp_splines * d x 1
+            % Outputs:
+            %   - Phi: spatial motion-field component
+            %   - TimeDepAffineCoeff
+            %       - 1 x d Cell, one element for each motion direction
+            %       - per cell-element: time-dependent affine coefficients, one set of coefficients per dynamic, size: (d+1) x NumberOfDynamics
+            %   - TimeDepAffineMatrix, size: NumDynamics x d x (d+1)
+            
+            
+            AffineSplineMotionFieldCoefficients = reshape(AffineSplineMotionFieldCoefficients,[],obj.NumberOfSpatialDims);
+
+            
+            for i=1:size(AffineSplineMotionFieldCoefficients,2) % loop over motion direction x,y,z
+                TimeDepAffineCoeff(:,i,:)   = reshape(AffineSplineMotionFieldCoefficients(:,i),[],size(obj.TemporalBasis,2)) * obj.TemporalBasis.';
+                TimeDepAffineMatrix(i,:,:)  = permute(TimeDepAffineCoeff(:,i,:),[2 1 3]); 
+            end
+            
+            Phi = obj.SpatialBasis;
+            
+        end % end ExpandMotionfieldCoefficientsAffineSpline
+        
         %% Expand motion field coefficients
         function [Phi,Phi_rshp,Psi,PsiT,SpatialCoefficients_rshp2,MotionFieldCoefficients]=ExpandMotionfieldCoefficients(obj,MotionFieldCoefficients)
             % Function to expand motion field spline basis coefficients to a full motion-field.
@@ -508,9 +790,26 @@ classdef MRMOTUS_Operator
             end
         end
         
-        function obj=initialize_spline_bases(obj)
+        function obj=initialize_bases(obj)
             
-            disp('+Initializing spline basis...');
+            if ~obj.param_struct.spatial_affine_basis
+                obj = initialize_spatial_spline_bases(obj);
+            else
+                obj = initialize_spatial_affine_basis(obj);
+            end
+            
+            obj = initialize_temporal_spline_basis(obj);
+            
+            
+        end
+        
+        
+        
+                
+        
+        function obj=initialize_spatial_spline_bases(obj)
+            
+            disp('+Initializing spatial spline basis...');
             
             basis_options_spatial.N                 = obj.ImDims;
             basis_options_spatial.spline_orders     = obj.param_struct.NumberOfSpatialSplines;
@@ -533,10 +832,33 @@ classdef MRMOTUS_Operator
             end
             SpatialBases                            = {SpatialBasis};  
             obj.SpatialBasis                        = cat(2,SpatialBases{:});
-            NumberOfSpatialBases                    = size(SpatialBases,2);
+            %NumberOfSpatialBases                    = size(SpatialBases,2);
 
             
-            if obj.param_struct.NumberOfTemporalSplines>0
+        end
+        
+        function obj = initialize_spatial_affine_basis(obj)
+            
+            disp('+Initializing spatial affine basis...');
+            
+            %n_AffineParameters = (obj.NumberOfSpatialDims + 1)*obj.NumberOfSpatialDims ;
+            
+            basis_for_1_motionfield_direction = [obj.ReferenceGrid,obj.ReferenceGrid(:,1)*0+(max(abs(obj.ReferenceGrid(:))))/100]; % = [x_coords(:) y_coords(:) (z_coords(:)) 1(:)], to be multiplied with temporal basis via kronecker product
+                
+            obj.SpatialBasis = basis_for_1_motionfield_direction;
+            
+        end
+        
+        function obj = initialize_temporal_spline_basis(obj)
+            
+%             
+%             if ~exist('obj.param_struct.temporal_spline_basis')
+%                 obj.param_struct.temporal_spline_basis = 1;
+%             end
+            
+
+            if obj.param_struct.NumberOfTemporalSplines>0 && obj.param_struct.temporal_spline_basis
+                disp('+Initializing temporal spline basis...');
                 basis_options_temporal.N                = obj.NumberOfDynamics;
                 basis_options_temporal.spline_orders    = obj.param_struct.NumberOfTemporalSplines;
                 basis_options_temporal.dimension        = 1;
@@ -548,16 +870,15 @@ classdef MRMOTUS_Operator
                 obj.TemporalBasis                        = cat(2,TemporalBases{:});
                 NumberOfTemporalBases                   = size(TemporalBases,2);
 
-            else
+            else % don't initialize spline basis in time
+                disp('+Initializing identity temporal basis...');
                 obj.TemporalBasis                        = speye([obj.NumberOfDynamics obj.NumberOfDynamics]);            
                 NumberOfTemporalBases                    = 1;
 
             end
             
-            
-            
-            
         end
+        
         
         function obj = initialize_solution_variables(obj)
             
@@ -631,10 +952,17 @@ classdef MRMOTUS_Operator
         
         function obj=initialize_preconditioning(obj)
             
-            disp('+Initializing preconditioning matrix...');
             
+            
+            if obj.param_struct.PreconditionParam==0
+                disp('+Initializing identity preconditioning matrix...');
+            else
+                disp('+Initializing preconditioning matrix...');
+            end
+            
+
             obj = obj.initialize_dcf();
-            
+
             % make precond matrix
             for i=1:obj.NumberOfDynamics
                 obj.PreconditionMatrix{i}   = spdiags((reshape(obj.DCF(:,i),[],1)).^(obj.param_struct.PreconditionParam),0,numel(obj.DCF(:,i)),numel(obj.DCF(:,i)));
@@ -668,7 +996,7 @@ classdef MRMOTUS_Operator
     methods(Static)
         %% Forward and gradient - single dynamic
         function [ObjfuncValDynamic,GradientDynamic,ForwardSignal,DVF_Operator] = forward_and_gradient_singledynamic(MotionField,KspaceTrajectory,KspaceData,PrecondMatrix,static_transfer_struct,ParallelComputationFlag,varargin) % should be faster paralellized than separately forward and adjoint
-            % Function that evaluate the forward model for a single dynamic, this will be called in the larger functions above
+            % Function that evaluates the forward model for a single dynamic, this will be called in the larger functions above
  
             
             % Fetch the static_transfer_struct for this worker
@@ -825,7 +1153,11 @@ classdef MRMOTUS_Operator
         end % forward_and_gradient_regularization_singledynamic
         
         
-        function RefGrid=MakeReferenceGrid(N,d)
+        function RefGrid=MakeReferenceGrid(N,d,affine_flag)
+            if nargin<3
+                affine_flag = 1;
+            end
+            
             % return a reference grid with image dimension N and d spatial dimensions
 
             if d==3 % 3D
@@ -834,8 +1166,16 @@ classdef MRMOTUS_Operator
                 clearvars tmp_x tmp_y tmp_z
             elseif d==2 % 2D
                 [tmp_x,tmp_y]           = meshgrid(-N/2:N/2-1,-N/2:N/2-1);
+                
+                
+                if affine_flag
+                    tmp_x = tmp_x + 0.5*0;
+                    tmp_y = tmp_y + 0.5*0;
+                end
+                
                 RefGrid              = [tmp_x(:),tmp_y(:)];
                 clearvars tmp_x tmp_y
+                    
             end
         end
         
@@ -849,14 +1189,14 @@ classdef MRMOTUS_Operator
             %   T:  Number of dynamics
 
             % Inputs:
-            %   ReferenceImage:         Complex-valued image, size N*d x 1 or N x N [x N]
+            %   ReferenceImage:         Complex-valued image, size N x N [x N] x 1 x [xT]
             %   DVF:                    Cell with 1 component (no low-rank), or two
             %                           elements (low-rank). 
             %                           - Low-rank mode
             %                               size(DVF{1})= N*d x R 
             %                               size(DVF{2})= T   x R
             %                           - Full DVF mode
-            %                               size(DVF{1})= N*d x T
+            %                               size(DVF{1})= N x d x T
             %   pars:                   struct with all the required parameters.
             %   - SamplesPerReadout:    Number of samples per readout
             %   - ReadoutsPerDynamic:   Number of readouts per dynamic
@@ -868,36 +1208,47 @@ classdef MRMOTUS_Operator
             %                           SamplesPerReadout*ReadoutsPerDynamic x T
 
 
-            ReferenceImage  = reshape_to_square(ReferenceImage);
+            NumberOfSpatialDims = size(pars.KspaceCoords,2);
+            NumberOfDynamics    = size(pars.KspaceCoords,3);
             N               = size(ReferenceImage,1);
-            d               = numel(size(ReferenceImage));
+            d               = NumberOfSpatialDims;
             ReferenceGrid   = MRMOTUS_Operator.MakeReferenceGrid(N,d);
-
+           
+            dyn_ref_flag = size(ReferenceImage,5)>1;
             
-            
 
-            SnapshotData    = zeros(pars.SamplesPerReadout*pars.ReadoutsPerDynamic,T);
+            SnapshotData    = zeros(pars.SamplesPerReadout*pars.ReadoutsPerDynamic,NumberOfDynamics);
             low_rank_flag   = numel(DVF)>1;
             
             if low_rank_flag 
                 T = size(DVF{2},1);
             else
-                T = size(DVF{1},4);
+                T = size(DVF{1},3);
             end
             
             for dynamic_iii=1:T
-                for readout_iii=1:pars.ReadoutsPerDynamic
-                    indices = [1:pars.SamplesPerReadout]+(readout_iii-1)*pars.SamplesPerReadout;
+                disp(['Simulating data for dynamic ',num2str(dynamic_iii),'/',num2str(T)])
+%                 for readout_iii=1:pars.ReadoutsPerDynamic
+%                     indices = [1:pars.SamplesPerReadout]+(readout_iii-1)*pars.SamplesPerReadout;
 
-                    if low_rank_flag
-                        dvf = DVF{1}*DVF{2}(readout_iii+(dynamic_iii-1)*ReadoutsPerDynamic,:).';
-                    else
-                        dvf = DVF{1}(:,readout_iii);
-                    end
+%                     if low_rank_flag
+%                         dvf = DVF{1}*DVF{2}(readout_iii+(dynamic_iii-1)*pars.ReadoutsPerDynamic,:).';
+%                     else
+%                         dvf = DVF{1}(:,dynamic_iii);
+%                     end
 
-                    SnapshotData(indices,dynamic_iii)=MotionFieldOperator(pars.KspaceCoords(indices,:,dynamic_iii),ReferenceGrid,reshape(dvf,[],d)*single(abs(ReferenceImage(:))));
-
+                if low_rank_flag
+                    error('not implemented')
                 end
+                
+                dvf = DVF{1}(:,:,dynamic_iii);
+
+                if ~dyn_ref_flag
+                    SnapshotData(:,dynamic_iii)=MotionFieldOperator(pars.KspaceCoords(:,:,dynamic_iii),ReferenceGrid,dvf)*single(ReferenceImage(:));
+                else
+                    SnapshotData(:,dynamic_iii)=MotionFieldOperator(pars.KspaceCoords(:,:,dynamic_iii),ReferenceGrid,dvf*0)*single(reshape(ReferenceImage(:,:,:,:,dynamic_iii),[],1));
+                end
+                
             end
 
         end

@@ -42,8 +42,14 @@ function output=WarpReferenceImage(ReferenceImage,MotionFields)
         disp(['+Processing batch ',num2str(batch_index),'/',num2str(no_batches),'...'])
         vis_indices = [(batch_index-1)*batch_size+1:min((batch_index-1)*batch_size+batch_size,NumberOfDynamics)];
 
-        mf_highres(:,:,vis_indices) = UpscaleMotionFields(MotionFields(:,:,vis_indices),N_old,N_new);
-
+        if N_old ~= N_new
+            mf_highres(:,:,vis_indices) = UpscaleMotionFields(MotionFields(:,:,vis_indices),N_old,N_new);
+        else
+            mf_highres(:,:,vis_indices) = MotionFields(:,:,vis_indices);
+        end
+        
+        
+        
         clearvars resultt
         % warp high res reference image
         parfor rr=1:numel(vis_indices)
@@ -53,6 +59,8 @@ function output=WarpReferenceImage(ReferenceImage,MotionFields)
         % store result
         output(:,:,:,:,vis_indices)=resultt;
     end
+    
+    
 end
 
 
