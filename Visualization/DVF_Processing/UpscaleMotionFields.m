@@ -19,7 +19,6 @@ function mf_upscaled = UpscaleMotionFields(mf,N_old,N_new)
         for sss=1:NumberOfSpatialDims
             if NumberOfSpatialDims==2
                 mf_upscaled(:,sss,ddd) = single(reshape(imresize(reshape_to_square(mf(:,sss,ddd),NumberOfSpatialDims),ones(1,NumberOfSpatialDims)*N_new,'lanczos3'),[],1));
-                sum(reshape(isnan(mf_upscaled(:,sss,ddd)),[],1))
             elseif NumberOfSpatialDims==3
                 mf_upscaled(:,sss,ddd) = single(reshape(imresize3(reshape_to_square(mf(:,sss,ddd),NumberOfSpatialDims),ones(1,NumberOfSpatialDims)*N_new,'linear'),[],1));
             end
