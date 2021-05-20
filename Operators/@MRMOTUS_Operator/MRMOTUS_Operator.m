@@ -867,10 +867,11 @@ classdef MRMOTUS_Operator
             %   SnapshotData:           Complex-valued snapshot data, size
             %                           SamplesPerReadout*ReadoutsPerDynamic x T
 
+            d               = size(pars.KspaceCoords,2);
+            
 
-            ReferenceImage  = reshape_to_square(ReferenceImage);
+            ReferenceImage  = reshape_to_square(ReferenceImage,d);
             N               = size(ReferenceImage,1);
-            d               = numel(size(ReferenceImage));
             ReferenceGrid   = MRMOTUS_Operator.MakeReferenceGrid(N,d);
 
             
