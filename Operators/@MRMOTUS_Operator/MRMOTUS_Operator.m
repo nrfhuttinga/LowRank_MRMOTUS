@@ -782,7 +782,7 @@ classdef MRMOTUS_Operator
                             
                             ObjfuncValDynamic = ObjfuncValDynamic + RegularizationOptions.Types.Determinant.Lambda*(0.5*norm(dtminone(:)).^2);
                             clearvars dtminone
-                            GradientDynamic = GradientDynamic  + reshape(RegularizationOptions.Types.Determinant.Lambda * ([RegularizationOptions.Types.Determinant.BasisDxYZ.Value.',RegularizationOptions.Types.Determinant.BasisXDyZ.Value.',RegularizationOptions.Types.Determinant.BasisXYDz.Value.'] * B),[],3,v);
+                            GradientDynamic = GradientDynamic  + reshape(RegularizationOptions.Types.Determinant.Lambda * ([RegularizationOptions.Types.Determinant.BasisDxYZ.Value.',RegularizationOptions.Types.Determinant.BasisXDyZ.Value.',RegularizationOptions.Types.Determinant.BasisXYDz.Value.'] * double(B)),[],3,v);
 
                             
                         elseif size(MotionField,2)==2 %2D
@@ -803,7 +803,7 @@ classdef MRMOTUS_Operator
                                 B_1 = reshape(bsxfun(@times,static_struct.referenceImage.*static_struct.referenceImage.*dtminone,[(dydy(:)+1),-dydx(:)]),[],1); % derivative to x coefficients: to dxdx & dxdy. Bases: DxY, XDy
                                 B_2 = reshape(bsxfun(@times,static_struct.referenceImage.*static_struct.referenceImage.*dtminone,[-dxdy(:),(dxdx(:)+1)]),[],1); % derivative to y coefficients: to dydx & dydy. Bases: DxY, XDy
 
-                                GradientDynamic(:,:,d) = GradientDynamic(:,:,d)  + RegularizationOptions.Types.Determinant.Lambda * RegularizationOptions.Types.Determinant.A_1.Value * [B_1 , B_2];
+                                GradientDynamic(:,:,d) = GradientDynamic(:,:,d)  + RegularizationOptions.Types.Determinant.Lambda * RegularizationOptions.Types.Determinant.A_1.Value * double([B_1 , B_2]);
                                 
                             
                             end
