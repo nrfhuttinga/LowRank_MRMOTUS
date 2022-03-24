@@ -760,7 +760,7 @@ classdef MRMOTUS_Operator
                             dydy = permute(RegularizationOptions.Types.Determinant.BasisXDyZ.Value*squeeze(MotionField(:,2,:))+1,[1 3 2]);
                             dydz = permute(RegularizationOptions.Types.Determinant.BasisXYDz.Value*squeeze(MotionField(:,2,:)),[1 3 2]);
                             dzdx = permute(RegularizationOptions.Types.Determinant.BasisDxYZ.Value*squeeze(MotionField(:,3,:)),[1 3 2]);
-                            dzdy = permute(RegularizationOptions.Types.Determinant.BasisXDyZ*squeeze(MotionField(:,3,:)),[1 3 2]);
+                            dzdy = permute(RegularizationOptions.Types.Determinant.BasisXDyZ.Value*squeeze(MotionField(:,3,:)),[1 3 2]);
                             dzdz = permute(RegularizationOptions.Types.Determinant.BasisXYDz.Value*squeeze(MotionField(:,3,:))+1,[1 3 2]);
                             
 
