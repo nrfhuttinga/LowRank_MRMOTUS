@@ -782,7 +782,7 @@ classdef MRMOTUS_Operator
                             
                             ObjfuncValDynamic = ObjfuncValDynamic + RegularizationOptions.Types.Determinant.Lambda*(0.5*norm(dtminone(:)).^2);
                             clearvars dtminone
-                            GradientDynamic = GradientDynamic  + reshape(RegularizationOptions.Types.Determinant.Lambda * ([RegularizationOptions.Types.Determinant.BasisDxYZ.Value.',RegularizationOptions.Types.Determinant.BasisXDyZ.Value.',RegularizationOptions.Types.Determinant.BasisXYDz.Value.'] * double(B)),[],3,v);
+                            GradientDynamic = GradientDynamic  + reshape(RegularizationOptions.Types.Determinant.Lambda * (RegularizationOptions.Types.Determinant.A_1.Value * double(B)),[],3,v);
 
                             
                         elseif size(MotionField,2)==2 %2D
