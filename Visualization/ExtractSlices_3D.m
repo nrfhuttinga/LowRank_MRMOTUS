@@ -20,7 +20,9 @@ if dimension > 3
     error('Dimension cannot be larger than 3!')
 end
 
-
+if ~iscell(motionField)
+    motionField = DVFMat2Cell(motionField);
+end
 
 inputSize = size(Image);
 if numel(inputSize)==2

@@ -3,6 +3,10 @@ function res = demax(x)
     %
     % Tom Bruijnen, UMC Utrecht, 2020.
 
-    res=(x/max(abs(x(:))));
+    if max(abs(x(:))) == 0 
+        res = x;
+    else
+        res=(x/max(abs(x(:))));
+    end
 
 end

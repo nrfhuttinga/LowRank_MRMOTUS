@@ -44,7 +44,7 @@ for i=1:numel(param_struct.postprocessing.flips)
         HighresReferenceImage = flip(HighresReferenceImage,i);
     end
 end
-HighresReferenceImage = HighresReferenceImage.^.7;
+% HighresReferenceImage = HighresReferenceImage.^.7;
 % flip motion-field if required
 MF = FlipMotionField(MF, param_struct.postprocessing.flips);
 
@@ -116,7 +116,7 @@ catch
         save([ref_mask_path,'/RefMask.mat'],'mask_sagittal','mask_transverse','mask_coronal');
     else
         RefMask = Poly2Binary(image_for_vis);
-        save(ref_mask_path,'RefMask','-v7.3');
+        save([ref_mask_path,'/RefMask.mat'],'RefMask','-v7.3');
     end
 end
 end
@@ -272,7 +272,7 @@ if param_struct.postprocessing.MotionImageOverlayFlag
         % Export resulting images as GIF
         CellsToGif(a,b,delay_time,[param_struct.export_folder,'/MotionImageOverlay',param_struct.export_suffix,'.gif'],text)
 
-        close all;
+%         close all;
     end
  
     

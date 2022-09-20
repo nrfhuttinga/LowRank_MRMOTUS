@@ -5,10 +5,14 @@ function struct=set_default(struct,field,value)
 
 if ~isfield(struct,field)
     try
-        if numel(value)>1
-            disp(['+Setting default parameter for ',field,': [',num2str(value(1)),'...',num2str(value(end)),']']);
+        if ischar(value)
+            disp(['+Setting default parameter for ',field,': ',value]);
         else
-            disp(['+Setting default parameter for ',field,': ',num2str(value)]);
+            if numel(value)>1
+                disp(['+Setting default parameter for ',field,': [',num2str(value(1)),'...',num2str(value(end)),']']);
+            else
+                disp(['+Setting default parameter for ',field,': ',num2str(value)]);
+            end
         end
     catch
     end

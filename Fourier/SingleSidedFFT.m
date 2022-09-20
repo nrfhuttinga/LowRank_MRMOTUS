@@ -8,7 +8,7 @@ if numel(sx)>2
     error('Wrong input dimension');
 end
 
-if nargin < 2 || isempty(d)
+if nargin < 3 || isempty(d)
     d = 1;
 end
 

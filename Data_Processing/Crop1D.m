@@ -10,10 +10,14 @@ function cropped_indices=Crop1D(N,scale,centerout_flag)
         centerout_flag = 0;
     end
     
-    if ~centerout_flag
-        cropped_indices = [-round(N/scale/2):round(N/scale/2)-1] + round(N/2)+1;
+    if N==1 && scale==1
+        cropped_indices = 1;
     else
-        cropped_indices = 1:round(N/scale);
+        if ~centerout_flag
+            cropped_indices = [-round(N/scale/2):round(N/scale/2)-1] + round(N/2)+1;
+        else
+            cropped_indices = 1:round(N/scale);
+        end
     end
 
 

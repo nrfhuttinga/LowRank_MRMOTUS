@@ -78,66 +78,22 @@ function [imgs_out,cm] = MotionImageOverlay_2Dt(Images,motionFields,varargin)
     end
     set(gcf,'Color','w')
 
-    [~,~,~,~,dynamics]=size(Images);
-
-    if rotations == 1 % counterclockwise
-        % x -> y
-        % y -> -x
-
-        Images = rot90(Images,rotations);
 
 
-        for i=1:dynamics
-            mf_new(:,:,:,1)=-motionFields{i}(:,:,2);
-            mf_new(:,:,:,2)=-motionFields{i}(:,:,1);
-            motionFields{i}=rot90(mf_new,rotations);
-        end
-
-
-
-    elseif rotations == 2
-        % x -> y -> -x
-        % y -> -x -> -y
-
-
-        Images = rot90(Images,rotations);
-
-
-        for i=1:dynamics
-            mf_new(:,:,:,2)=-motionFields{i}(:,:,2);
-            mf_new(:,:,:,1)=motionFields{i}(:,:,1);
-            motionFields{i}=rot90(mf_new,rotations);
-        end
-
-
-
-
-
-    elseif rotations == 3
-        % x -> y -> -x -> -y
-        % y -> -x -> -y -> x
-
-        Images = rot90(Images,rotations);
-
-
-        for i=1:dynamics
-            mf_new(:,:,:,1)=-motionFields{i}(:,:,2);
-            mf_new(:,:,:,2)=motionFields{i}(:,:,1);
-            motionFields{i}=rot90(mf_new,rotations);
-        end   
-
-    elseif rotations == 0
-        for i=1:dynamics
-            motionFields{i}(:,:,2) = motionFields{i}(:,:,2);
-            motionFields{i}(:,:,1) = motionFields{i}(:,:,1);
-
-        end
+    if ~iscell(motionFields)
+        motionFields = DVFMat2Cell(motionFields);
     end
     
     
+    
+    Images = rot90(Images,rotations);
+
+    motionFields = RotateMotionField2D(motionFields,rotations);
+    
+    
 
 
-    [dim2,dim1,~]=size(Images);
+    [dim2,dim1,~,~,dynamics]=size(Images);
 
 
 
@@ -151,9 +107,11 @@ function [imgs_out,cm] = MotionImageOverlay_2Dt(Images,motionFields,varargin)
     ylimit = hax.YLim;
     close all;
     h=figure('units','normalized','outerposition',[0 0 1 1]);
-    set(gcf,'color','black');
+    pause(2);
     for i=1:dynamics
-
+        clf('reset');
+        cla('reset');
+        set_background_black;
 
         motionField_HOR = scaling*squeeze(motionFields{i}(:,:,1)).*quiver_mask;
         motionField_VER = scaling*squeeze(motionFields{i}(:,:,2)).*quiver_mask;

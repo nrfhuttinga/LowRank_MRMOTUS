@@ -17,18 +17,15 @@ function CellsToGif(ImageCell,ColormapCell,varargin)
     end
 
     ims = size(ImageCell{1},1);
-    % ims = 350;
 
     if grayscale
         for i=1:numel(ImageCell)
-    %         rsz = imresize(ImageCell{i},[ims,ims]);
-            Images(:,:,i) = imresize(ImageCell{i},[ims,ims]);
-    %         Images(:,:,i) = demax(Images(:,:,i))*
+            rsz = imresize(ImageCell{i},[ims,ims]);
+            [Images(:,:,i),ColormapCell{i}] = imresize(ImageCell{i},ColormapCell{i},[ims,ims]);
         end
     else
         for i=1:numel(ImageCell)
-    %         Images(:,:,:,i) = imresize(ImageCell{i},[ims ims]);
-            Images(:,:,:,i) = demax(imresize(ImageCell{i},[ims,ims]))*max(ImageCell{i}(:));
+            [Images(:,:,i),ColormapCell{i}] = imresize(ImageCell{i},ColormapCell{i},[ims,ims]);
         end
     end
 
@@ -93,7 +90,7 @@ function CellsToGif(ImageCell,ColormapCell,varargin)
 
     %     ExtractedImage = squeeze(ImageCell{loopIndex});
         ExtractedImage = squeeze(Images(:,:,loopIndex));
-        ExtractedImage(isnan(ExtractedImage(:)))=0;
+%         ExtractedImage(isnan(ExtractedImage(:)))=0;
 
 
         % add padding on top for text

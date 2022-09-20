@@ -5,7 +5,7 @@ clear all;
 
 %% Set paths
 
-lowrank_mrmotuspath = '../LowRank_MRMOTUS/';
+lowrank_mrmotuspath = '/nfs/arch11/researchData/USER/nhutting/code/LowRank_MRMOTUS/';
 cd(lowrank_mrmotuspath)
 addpath(genpath(pwd));
 
@@ -16,7 +16,7 @@ load([data_folder,'DataStruct_raw.mat']);
 ref_im_parameters_3DGMR;
 
 %% Preprocess and reconstruct reference image
-
+ref_im_parameters.parallel_reconstruction = 0;
 [DataStruct,HighresReferenceImage]=Preprocess_and_RefImage(DataStruct,ref_im_parameters);
 % Save results in the new DataStruct_processed struct that will be used in the MR-MOTUS recons
 disp('Saving...')

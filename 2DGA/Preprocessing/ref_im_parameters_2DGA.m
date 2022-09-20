@@ -17,7 +17,8 @@ ref_im_parameters.bart.version                  = 6;                      	% BAR
 % parameters for binning
 ref_im_parameters.binning_pars.binning_strategy        = 'phase';          	% Phase or amplitude binning
 ref_im_parameters.binning_pars.thresh                  = 0.005;            	% Threshold for peak detection algorithm
-ref_im_parameters.binning_pars.resp_phases             = 5;                	% Number of respiratory phases
+ref_im_parameters.binning_pars.resp_phases             = 2;                	% Number of respiratory phases
 ref_im_parameters.binning_pars.return_extreme_phase    = 2;                	
 % 0 - return all phases, 1 - return inhale, 2 - return exhale
 
+ref_im_parameters.surrogate_pars.lowpass_filtering = 0;

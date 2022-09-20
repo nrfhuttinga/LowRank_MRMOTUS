@@ -36,6 +36,9 @@ function combinationCoefficients = HomogeneousCoilCompressionCoefficients(coil_s
     covar = R'*R;
 
     combinationCoefficients = pinv(coil_sensitivities_reshaped'*coil_sensitivities_reshaped+lambda*covar,1e-12)*(coil_sensitivities_reshaped'*sensitivity_target) ;
+%     combinationCoefficients = pinv(coil_sensitivities_reshaped,1e-12)*sensitivity_target ;
+%     combinationCoefficients = inv(coil_sensitivities_reshaped'*coil_sensitivities_reshaped+lambda*covar)\(coil_sensitivities_reshaped'*sensitivity_target) ;
+
     combinationCoefficients = permute(combinationCoefficients,[2 3 4 1]);
 
 

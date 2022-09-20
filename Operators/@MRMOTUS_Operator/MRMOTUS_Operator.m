@@ -97,13 +97,19 @@ classdef MRMOTUS_Operator
             %   ForwardSignal               - F(MotionFieldCoefficients)
             %   DvfOperator                 - Cell with MotionFieldOperator objects for each dynamic
             
-
+            
             
             [Phi,Phi_rshp,Psi,PsiT,SpatialCoefficients_rshp2,MotionFieldCoefficients] = obj.ExpandMotionfieldCoefficients(MotionFieldCoefficients);
             
+%             for i=1:size(Phi,2)
+%                 Phi_scaling(1,i) = norm(Phi(:,i));
+%             end
+            Phi_scaling = ones(1,obj.param_struct.NumberOfComponents);
             
-           
-
+            SpatialCoefficients_rshp2 = SpatialCoefficients_rshp2   .* Phi_scaling;
+%             Phi_rshp                  = Phi_rshp                    * Phi_scaling;
+            Phi                       = Phi                         .* Phi_scaling;
+            
             lowrankstart=tic;
             
             if isempty(obj.Ncoefficients_spatial)
@@ -168,10 +174,10 @@ classdef MRMOTUS_Operator
 
             
             %% Main computation block
-            
+%             rand_dyns = randsample(obj.NumberOfDynamics,floor(obj.NumberOfDynamics/2)).';
             % computations in serie
             if ~obj.param_struct.ParallelComputationFlag
-             
+                
                 % loop over all dynamics
                 for dynamic = 1:obj.NumberOfDynamics 
                     
@@ -286,10 +292,10 @@ classdef MRMOTUS_Operator
             %% Project gradients on the cubic B-spline coefficients, and collect everything in one vector
             
             % Phi
-            Gradient(1:obj.Ncoefficients_spatial,1)        = Gradient(1:obj.Ncoefficients_spatial,1)+reshape(obj.SpatialBasis'*reshape(GradientPhi,[],obj.NumberOfSpatialDims*obj.param_struct.NumberOfComponents),[],1);
+            Gradient(1:obj.Ncoefficients_spatial,1)        = Gradient(1:obj.Ncoefficients_spatial,1)+reshape(reshape(obj.SpatialBasis'*reshape(GradientPhi,[],obj.NumberOfSpatialDims*obj.param_struct.NumberOfComponents),[],obj.param_struct.NumberOfComponents).*Phi_scaling,[],1);
             
             % Phi coefficients directly
-            Gradient(1:obj.Ncoefficients_spatial,1)        = Gradient(1:obj.Ncoefficients_spatial,1)+GradientPhiCoeff;
+            Gradient(1:obj.Ncoefficients_spatial,1)        = Gradient(1:obj.Ncoefficients_spatial,1)+reshape(reshape(GradientPhiCoeff,[],obj.param_struct.NumberOfComponents).* Phi_scaling,[],1);
             
             % Psi
             Gradient(obj.Ncoefficients_spatial+1:end,1)    = Gradient(obj.Ncoefficients_spatial+1:end,1) + reshape(obj.TemporalBasis'*GradientPsiT',[],1);
@@ -298,13 +304,13 @@ classdef MRMOTUS_Operator
             ObjfuncValue = sum(ObjfuncValueDataFid) + sum(ObjfuncValueRegDynamic);
             
             %% Write some feedback to the terminal
-            fprintf('f(x) = %14.6e, D(x) = %14.6e , R(x) = %14.6e, ||G_phi||_infty = %14.6e, ||G_psi||_infty = %14.6e , ||G||_infty = %14.6e \n', ...
+            fprintf('f(x) = %14.6e, D(x) = %14.6e , R(x) = %14.6e, ||G_phi||_2 = %14.6e, ||G_psi||_2 = %14.6e , ||G||_2 = %14.6e \n', ...
             ObjfuncValue,...
             sum(ObjfuncValueDataFid),...
             sum(ObjfuncValueRegDynamic),...
-            norm(Gradient(1:obj.Ncoefficients_spatial,1),'inf'),...
-            norm(Gradient(obj.Ncoefficients_spatial+1:end,1),'inf'), ...
-            norm(Gradient(:),'inf'))  ;
+            norm(Gradient(1:obj.Ncoefficients_spatial,1),2),...
+            norm(Gradient(obj.Ncoefficients_spatial+1:end,1),2), ...
+            norm(Gradient(:),2))  ;
             
             
             
@@ -374,7 +380,7 @@ classdef MRMOTUS_Operator
             
             [Phi,PsiT,TimeDepAffineMatrix] = obj.ExpandMotionfieldCoefficientsAffineSpline(AffineSplineMotionFieldCoefficients);
             
-            
+            Psi = PsiT.';
            
 
             lowrankstart=tic;
@@ -671,7 +677,7 @@ classdef MRMOTUS_Operator
             else
                 obj.DiagReferenceImage  = spdiags(obj.ReferenceImage,0,numel(obj.ReferenceImage),numel(obj.ReferenceImage));
             end
-            obj.referenceImageMask  = abs(obj.ReferenceImage(:,1))>1e-10;
+            obj.referenceImageMask  = abs(obj.ReferenceImage(:,1)*0+1)>0;
         end
         
         function obj=initialize_parallel_computation(obj)
@@ -792,13 +798,18 @@ classdef MRMOTUS_Operator
         
         function obj=initialize_bases(obj)
             
-            if ~obj.param_struct.spatial_affine_basis
+            if (isfield(obj.param_struct,'spatial_affine_basis') && ~obj.param_struct.spatial_affine_basis) || ~isfield(obj.param_struct,'spatial_affine_basis')
                 obj = initialize_spatial_spline_bases(obj);
             else
                 obj = initialize_spatial_affine_basis(obj);
             end
             
             obj = initialize_temporal_spline_basis(obj);
+            
+            obj.SpatialBasis = obj.SpatialBasis/norm(obj.SpatialBasis(:));
+            obj.TemporalBasis = obj.TemporalBasis/norm(obj.TemporalBasis(:));
+            
+            
             
             
         end
@@ -882,20 +893,31 @@ classdef MRMOTUS_Operator
         
         function obj = initialize_solution_variables(obj)
             
-            disp('+Initializing solution variables...');
-
-
             obj.Ncoefficients_spatial = size(obj.SpatialBasis,2)*obj.NumberOfSpatialDims*obj.param_struct.NumberOfComponents;
             obj.Ncoefficients_temporal = size(obj.TemporalBasis,2)*obj.param_struct.NumberOfComponents;
 
+            
+            if ~isfield(obj.param_struct,'solution_variables_initialization') || isempty(obj.param_struct.solution_variables_initialization)
+                disp('+Initializing solution variables as random vectors...');
 
-            PhiCoefficients_0 = reshape(rand([obj.Ncoefficients_spatial,1])-0.5,[],obj.param_struct.NumberOfComponents);
-            PsiCoefficients_0 = reshape(rand([obj.Ncoefficients_temporal,1])-0.5,[],obj.param_struct.NumberOfComponents);
+                PhiCoefficients_0 = reshape(rand([obj.Ncoefficients_spatial,1])-0.5,[],obj.param_struct.NumberOfComponents);
+                PsiCoefficients_0 = reshape(rand([obj.Ncoefficients_temporal,1])-0.5,[],obj.param_struct.NumberOfComponents);
 
-            PhiCoefficients_0 = PhiCoefficients_0/norm(PhiCoefficients_0,'fro');
-            PsiCoefficients_0 = PsiCoefficients_0/norm(PsiCoefficients_0,'fro');
+                PhiCoefficients_0 = normalize(PhiCoefficients_0,1,'norm',2)*10;
+                PsiCoefficients_0 = normalize(PsiCoefficients_0,1,'norm',2);
+                
+                if ~isfield(obj.param_struct,'init_scaling')
+                    obj.param_struct.init_scaling = 1;
+                end
 
-            obj.SolutionVariables_init = [PhiCoefficients_0(:);PsiCoefficients_0(:)];
+                obj.SolutionVariables_init = [PhiCoefficients_0(:);PsiCoefficients_0(:)]*obj.param_struct.init_scaling;
+            else
+                disp('+Initializing solution variables from param_struct...');
+
+                obj.SolutionVariables_init = obj.param_struct.solution_variables_initialization;
+                
+                
+            end
             
                 
             
@@ -1059,7 +1081,8 @@ classdef MRMOTUS_Operator
                         size_motionfield_coeff = size(MotionField);
                         MotionField = reshape(MotionField,size(MotionField,1),[]);
                         
-                        [regularizationEnergy,regularizationGradient]   = vectorial_tv_operator(MotionField,RegularizationOptions.Types.(reg_types{i}).Eps,RegularizationOptions.Types.(reg_types{i}).D.Value);
+%                         [regularizationEnergy,regularizationGradient]   = vectorial_tv_operator(MotionField,RegularizationOptions.Types.(reg_types{i}).Eps,RegularizationOptions.Types.(reg_types{i}).D.Value);
+                        [regularizationEnergy,regularizationGradient]   = tv_vector_operator_coefficients(MotionField,RegularizationOptions.Types.(reg_types{i}).Eps,static_struct.ImDims*ones(1,static_struct.NumberOfSpatialDims),RegularizationOptions.GridSpacing,RegularizationOptions.Types.(reg_types{i}).D.Value);
                         ObjfuncValDynamic                               = ObjfuncValDynamic   + RegularizationOptions.Types.(reg_types{i}).Lambda * regularizationEnergy;
 
                         GradientDynamic = GradientDynamic  +  RegularizationOptions.Types.(reg_types{i}).Lambda * reshape(regularizationGradient,size_motionfield_coeff);
@@ -1217,17 +1240,24 @@ classdef MRMOTUS_Operator
             dyn_ref_flag = size(ReferenceImage,5)>1;
             
 
-            SnapshotData    = zeros(pars.SamplesPerReadout*pars.ReadoutsPerDynamic,NumberOfDynamics);
+            SnapshotData    = zeros(size(pars.KspaceCoords,1),NumberOfDynamics);
             low_rank_flag   = numel(DVF)>1;
             
             if low_rank_flag 
                 T = size(DVF{2},1);
             else
-                T = size(DVF{1},3);
+                T = NumberOfDynamics;%size(DVF{1},3);
             end
             
+            if low_rank_flag
+                    error('not implemented')
+            end
+            
+            NC = size(ReferenceImage,4);
+            for coils_iii=1:NC
+            disp(['Simulating data for coil ',num2str(coils_iii),'/',num2str(NC)])
             for dynamic_iii=1:T
-                disp(['Simulating data for dynamic ',num2str(dynamic_iii),'/',num2str(T)])
+            disp(['Simulating data for dynamic ',num2str(dynamic_iii),'/',num2str(T)])
 %                 for readout_iii=1:pars.ReadoutsPerDynamic
 %                     indices = [1:pars.SamplesPerReadout]+(readout_iii-1)*pars.SamplesPerReadout;
 
@@ -1237,18 +1267,17 @@ classdef MRMOTUS_Operator
 %                         dvf = DVF{1}(:,dynamic_iii);
 %                     end
 
-                if low_rank_flag
-                    error('not implemented')
-                end
                 
-                dvf = DVF{1}(:,:,dynamic_iii);
+                
+%                 dvf = DVF{1}(:,:,dynamic_iii);
 
                 if ~dyn_ref_flag
-                    SnapshotData(:,dynamic_iii)=MotionFieldOperator(pars.KspaceCoords(:,:,dynamic_iii),ReferenceGrid,dvf)*single(ReferenceImage(:));
+                    SnapshotData(:,dynamic_iii,1,coils_iii)=MotionFieldOperator(pars.KspaceCoords(:,:,dynamic_iii),ReferenceGrid,DVF{1}(:,:,dynamic_iii))*reshape(ReferenceImage(:,:,:,coils_iii,:),[],1);
                 else
-                    SnapshotData(:,dynamic_iii)=MotionFieldOperator(pars.KspaceCoords(:,:,dynamic_iii),ReferenceGrid,dvf*0)*single(reshape(ReferenceImage(:,:,:,:,dynamic_iii),[],1));
+                    SnapshotData(:,dynamic_iii,1,coils_iii)=MotionFieldOperator(pars.KspaceCoords(:,:,dynamic_iii),ReferenceGrid,DVF{1}(:,:,dynamic_iii)*0)*reshape(ReferenceImage(:,:,:,coils_iii,dynamic_iii),[],1);
                 end
                 
+            end
             end
 
         end
