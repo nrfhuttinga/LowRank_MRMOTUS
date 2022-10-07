@@ -39,31 +39,22 @@ classdef MRMOTUS_Operator
             %
             % Inputs:
             %   ReferenceImage          - Complex reference image [N^d x 1]
-            %   KspaceTrajectory        - Kspace trajectory for the forward model [#readout_samples x d x interleaves], should be scaled between [ImDim(1)/2 ImDim(2)/2 ImDim(3)/2]
+            %   KspaceTrajectory        - Kspace trajectory for the forward model [#readout_samples x d x interleaves]
             %   param_struct            - All parameters specified in the example parameter files, e.g. 'Parameters_2Dt_RespMotion.m'
             
             disp('=== Initializing MR-MOTUS Operator object ===')
 
-            spatial_ordering = [2 1 3];
+            ReferenceImage = ReferenceImage(:);
+            
             % set internal parameters - don't touch
             obj.KspaceTrajectory        = KspaceTrajectory;
+            obj                         = obj.set_reference_image(ReferenceImage(:));
             obj.NumberOfDynamics        = size(obj.KspaceTrajectory,3);
             obj.NumberOfSpatialDims     = size(obj.KspaceTrajectory,2);
-            
-            obj.param_struct            = param_struct;
-            obj.ImDims              	= max(abs(obj.KspaceTrajectory(:,spatial_ordering(1:obj.NumberOfSpatialDims),:)),[],[1,3])*2;
-            disp(['+ Extracted ImDims from ReferenceImage: ',num2str(obj.ImDims)]);
-            obj                         = obj.set_reference_image(ReferenceImage(:));
-           
-%             obj.ImDims                  = size(ReferenceImage); %round(numel(ReferenceImage(:,1))^(1/obj.NumberOfSpatialDims));
+            obj.ImDims                  = round(numel(ReferenceImage(:,1))^(1/obj.NumberOfSpatialDims));
             obj.ReferenceGrid           = MRMOTUS_Operator.MakeReferenceGrid(obj.ImDims,obj.NumberOfSpatialDims);
+            obj.param_struct            = param_struct;
             
-            
-%             ReferenceImage = ReferenceImage(:);
-
-            if ~isfield(obj.param_struct,'motionfieldoperator_type')
-                obj.param_struct.motionfieldoperator_type = 'finufft';
-            end
             
             disp(['+Detected ',num2str(obj.NumberOfSpatialDims),'D data']);
             
@@ -129,7 +120,7 @@ classdef MRMOTUS_Operator
             %% Initialize...
             % - Gradient of objective w.r.t. spatial motion-fields, i.e. dE/d(Phi),
             % - Size: N^d x d*R
-            GradientPhi                 = zeros([prod(obj.ImDims),obj.NumberOfSpatialDims*obj.param_struct.NumberOfComponents]);  
+            GradientPhi                 = zeros([obj.ImDims^obj.NumberOfSpatialDims,obj.NumberOfSpatialDims*obj.param_struct.NumberOfComponents]);  
             % - Gradient w.r.t. temporal profile, i.e. dE/d(Psi^T)
             % - Size: R x M
             GradientPsiT                = zeros([obj.param_struct.NumberOfComponents,obj.NumberOfDynamics]); 
@@ -231,7 +222,6 @@ classdef MRMOTUS_Operator
                 a=1;
                 % loop over all dynamics
                 parallel_reg = 1;
-                
                 parfor dynamic = 1:obj.NumberOfDynamics % some notes: matlab transfers all variables in the loop, regardless of whether they are accessed or within if statements
                     
                     
@@ -251,7 +241,7 @@ classdef MRMOTUS_Operator
                     % update obj. function value
                     ObjfuncValueDataFid(dynamic) = ObjfuncValueDynamic;                             
                     
-                    if 1==1 %RegularizationFlag && parallel_reg
+                    if RegularizationFlag && parallel_reg
                         
                         % Compute 'effective' spatial coefficients alpha * Psi(:,t)^T for this dynamics
                         TotalCoefficients_rshp = reshape(SpatialCoefficients_rshp2*PsiT(:,dynamic),[],NumberOfSpatialDims);
@@ -327,7 +317,7 @@ classdef MRMOTUS_Operator
             %% Visual feedback
             if obj.param_struct.VisualizationFlag
                 for rr=1:obj.param_struct.NumberOfComponents
-                    viss = reshape(Phi(:,rr),[obj.ImDims,obj.NumberOfSpatialDims,1]);
+                    viss = reshape(Phi(:,rr),[ones(1,obj.NumberOfSpatialDims)*obj.ImDims,obj.NumberOfSpatialDims,1]);
                     vis(:,:,:,rr) = ((abs((sqrt(sum(viss.^2,obj.NumberOfSpatialDims+1:numel(size(viss))))))));
                 end
                 try
@@ -832,7 +822,7 @@ classdef MRMOTUS_Operator
             
             disp('+Initializing spatial spline basis...');
             
-            
+            basis_options_spatial.N                 = obj.ImDims;
             basis_options_spatial.spline_orders     = obj.param_struct.NumberOfSpatialSplines;
             
             if isfield(obj.param_struct,'NumberOfSpatialSplines_Z')
@@ -840,9 +830,8 @@ classdef MRMOTUS_Operator
             end
             
             basis_options_spatial.dimension         = obj.NumberOfSpatialDims;
-%             basis_options_spatial.spatial_ordering  = [2 1 3 4];
             basis_options_spatial.spatial_ordering  = [2 1 3 4];
-            basis_options_spatial.N                 = obj.ImDims(basis_options_spatial.spatial_ordering(1:obj.NumberOfSpatialDims));
+
 
 
             obj.SpatialBasisHandle                  = ConstructBasisHandle(basis_options_spatial);
@@ -1010,9 +999,8 @@ classdef MRMOTUS_Operator
             % get dcf
             if ~isfield(obj.param_struct,'dcf') || isempty(obj.param_struct.dcf)
                 dcf_coords = obj.KspaceTrajectory;
-                dcf_coords = dcf_coords./max(abs(dcf_coords),[],[1 3]);
                 dcf_coords(:,3,:)=zeros(size(dcf_coords(:,1,:)));
-                obj.DCF = reshape(iterative_dcf_estimation(dcf_coords*obj.ImDims(1),6),[],size(obj.KspaceTrajectory,3));
+                obj.DCF = reshape(iterative_dcf_estimation(demax(dcf_coords)*obj.ImDims(1),6),[],size(obj.KspaceTrajectory,3));
                 obj.DCF = obj.DCF/max(abs(obj.DCF(:)));
             else
                 obj.DCF = reshape(obj.param_struct.dcf,[],size(obj.KspaceTrajectory,3));
@@ -1039,14 +1027,12 @@ classdef MRMOTUS_Operator
             end
 
             % Initialize the warping operator F(.)
-            DVF_Operator                = MotionFieldOperator(KspaceTrajectory,static_transfer_struct.ReferenceGrid(static_transfer_struct.referenceImageMask(:),:),MotionField(static_transfer_struct.referenceImageMask(:),:),'finufft_cartesian'); % forward: maps motionfields to data, adjoint: maps data to motionfields
+            DVF_Operator                = MotionFieldOperator(KspaceTrajectory,static_transfer_struct.ReferenceGrid(static_transfer_struct.referenceImageMask(:),:),MotionField(static_transfer_struct.referenceImageMask(:),:),obj.param_struct.motionfieldoperator_type); % forward: maps motionfields to data, adjoint: maps data to motionfields
             
             % Compute the forward model signal with current motion-field estimate: F(D_t)
             if numel(varargin)>0
                 ForwardSignal               = DVF_Operator*static_transfer_struct.ReferenceImage(static_transfer_struct.referenceImageMask(:),varargin{1});
             else
-%                 size(static_transfer_struct.ReferenceImage)
-%                 size(static_transfer_struct.referenceImageMask(:))
                 ForwardSignal               = DVF_Operator*static_transfer_struct.ReferenceImage(static_transfer_struct.referenceImageMask(:));
             end
             
@@ -1096,7 +1082,7 @@ classdef MRMOTUS_Operator
                         MotionField = reshape(MotionField,size(MotionField,1),[]);
                         
 %                         [regularizationEnergy,regularizationGradient]   = vectorial_tv_operator(MotionField,RegularizationOptions.Types.(reg_types{i}).Eps,RegularizationOptions.Types.(reg_types{i}).D.Value);
-                        [regularizationEnergy,regularizationGradient]   = tv_vector_operator_coefficients(MotionField,RegularizationOptions.Types.(reg_types{i}).Eps,static_struct.ImDims,RegularizationOptions.GridSpacing,RegularizationOptions.Types.(reg_types{i}).D.Value);
+                        [regularizationEnergy,regularizationGradient]   = tv_vector_operator_coefficients(MotionField,RegularizationOptions.Types.(reg_types{i}).Eps,static_struct.ImDims*ones(1,static_struct.NumberOfSpatialDims),RegularizationOptions.GridSpacing,RegularizationOptions.Types.(reg_types{i}).D.Value);
                         ObjfuncValDynamic                               = ObjfuncValDynamic   + RegularizationOptions.Types.(reg_types{i}).Lambda * regularizationEnergy;
 
                         GradientDynamic = GradientDynamic  +  RegularizationOptions.Types.(reg_types{i}).Lambda * reshape(regularizationGradient,size_motionfield_coeff);
@@ -1195,18 +1181,14 @@ classdef MRMOTUS_Operator
                 affine_flag = 1;
             end
             
-            if numel(N)==1
-                N = ones(1,d)*N;
-            end
-            
             % return a reference grid with image dimension N and d spatial dimensions
 
             if d==3 % 3D
-                [tmp_x,tmp_y,tmp_z]     = meshgrid(-N(2)/2:N(2)/2-1,-N(1)/2:N(1)/2-1,-N(3)/2:N(3)/2-1);
+                [tmp_x,tmp_y,tmp_z]     = meshgrid(-N/2:N/2-1,-N/2:N/2-1,-N/2:N/2-1);
                 RefGrid                 = [tmp_x(:),tmp_y(:),tmp_z(:)];
                 clearvars tmp_x tmp_y tmp_z
             elseif d==2 % 2D
-                [tmp_x,tmp_y]           = meshgrid(-N(2)/2:N(2)/2-1,-N(1)/2:N(1)/2-1);
+                [tmp_x,tmp_y]           = meshgrid(-N/2:N/2-1,-N/2:N/2-1);
                 
                 
                 if affine_flag
@@ -1251,7 +1233,7 @@ classdef MRMOTUS_Operator
 
             NumberOfSpatialDims = size(pars.KspaceCoords,2);
             NumberOfDynamics    = size(pars.KspaceCoords,3);
-            N               = size(ReferenceImage);
+            N               = size(ReferenceImage,1);
             d               = NumberOfSpatialDims;
             ReferenceGrid   = MRMOTUS_Operator.MakeReferenceGrid(N,d);
            

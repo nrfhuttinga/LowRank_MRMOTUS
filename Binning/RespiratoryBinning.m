@@ -66,25 +66,12 @@ function [index,phase,varargout] = RespiratoryBinning(par)
 
     elseif strcmpi('hybrid',par.binning_strategy)
         fprintf('+Performing hybrid binning \n');
-        maxtab=[];
-        mintab=[];
-        thresh=par.thresh;
-        while isempty(maxtab)
-         [maxtab,mintab] = PeakDetection(par.surrogate_signal,thresh);
-         thresh=thresh*.75;
-        end
 
-        figure;
-        plot(par.surrogate_signal); hold on;
-        plot(maxtab(:,1),maxtab(:,2),'.','MarkerSize',20);
-        plot(mintab(:,1),mintab(:,2),'.','MarkerSize',20);
-        hold off;
-        title('Peak detection');
-        peaks = zeros(length(par.surrogate_signal),1);
-        peaks(maxtab(:,1)) = 1;
-        peaks(mintab(:,1)) = -1;
-        phase = CalculatePhase(peaks);
-
+         
+        pr = par;
+        pr.binning_strategy = 'phase';
+        [~,phase]=RespiratoryBinning(pr);
+        
         inexhale = zeros(length(phase),1);
         for npa = 1:length(phase)
             if phase(npa) >= pi
@@ -104,6 +91,8 @@ function [index,phase,varargout] = RespiratoryBinning(par)
             nline_ex = nline_in;
         end
 
+        
+        
         [val_inhale,~] = unique(sort(respiration_inhale(1:nline_in*par.resp_phases),'descend'));
         [val_exhale,~] = unique(sort(respiration_exhale(1:nline_ex*par.resp_phases),'ascend'));
 
@@ -204,67 +193,15 @@ function [index,phase,varargout] = RespiratoryBinning(par)
         end
 
 
-        nclusters=par.nclusters;
-        [cluster_idx_inhale,b_in,ptcd_in,D_inhale]=kmeans(par.surrogate_signal([inhale_idx(:)]),nclusters,'MaxIter',300);
-        % sort the cluster centroids
-        [~,s_ind_in]=sort(b_in,'descend');
-        cluster_ordering = [s_ind_in(:)];
-
-        
-        if par.split_in_exhale
-            [cluster_idx_exhale,b_ex,ptcd_ex,D_exhale]=kmeans(par.surrogate_signal([exhale_idx(:)]),nclusters,'MaxIter',300);
-            [~,s_ind_ex]=sort(b_ex,'ascend');
-            cluster_ordering = [s_ind_in(:);s_ind_ex(:)+nclusters];
-            nclusters = nclusters*2;
-        end
-        
-        k=1;
-        for i=cluster_ordering.'
-
-
-            disp(['Reconstructing cluster ',num2str(k),'/',num2str(nclusters)]);
-
-
-            if k>nclusters/2 && par.split_in_exhale % exhale
-                % select N_per_bin spoke sets closest to the cluster centroid
-                [~,top_X_points] = sort(D_exhale(:,i-nclusters/2),'ascend');
-                N_per_bin = ceil(length(par.surrogate_signal)/nclusters);
-                top_X_points=top_X_points(1:N_per_bin);
-
-                respiratory_bin_idx = exhale_idx(top_X_points);
-
-            else %inhale
-                % select N_per_bin spoke sets closest to the cluster centroid
-                [~,top_X_points] = sort(D_inhale(:,i),'ascend');
-                N_per_bin = ceil(length(par.surrogate_signal)/nclusters);
-                top_X_points=top_X_points(1:N_per_bin);
-                respiratory_bin_idx = inhale_idx(top_X_points);
-            end
-
-            index(:,k)=respiratory_bin_idx;
-            
-            
-        %     respiratory_bin_idx = inhale_exhale_sorted(find(cluster_idx(:)==i));
-            
-            cmap = colormap(jet(nclusters));
-            cmap = cmap(randperm(length(cmap)),:);
-
-            if k==1
-                figure;
-            end
-            plot(par.surrogate_signal([respiratory_bin_idx]),'Color',cmap(i,:));
-            drawnow;
-            hold on;
-
-
-            k=k+1;
-        end
-        phase=[];
+        [index,phase]=KmeansSorting(inhale_idx,exhale_idx,par);
 
         
     else
         error('>>Wrong input for par.binning_strategy \n');
     end
+   
+    disp('done');
+end
     
     
     

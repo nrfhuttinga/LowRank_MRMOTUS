@@ -12,6 +12,9 @@ function mf_upscaled = UpscaleMotionFields(mf,N_old,N_new)
     %
     % Niek Huttinga, UMC Utrecht, 2020
 
+    N_new = N_new(1);
+    N_old = N_old(1);
+    
     mf = mf*(N_new/N_old);
     NumberOfSpatialDims = size(mf,2);
     % interpolate to higher resolution

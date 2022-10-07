@@ -3,7 +3,6 @@ classdef MotionFieldOperator
     properties 
         KspaceTrajectory
         NewGrid
-        GridSize
         TrajSize
         NumberOfSpatialDimensions
         NufftOptions
@@ -19,7 +18,7 @@ classdef MotionFieldOperator
         
         % Constructor
         function obj = MotionFieldOperator(KspaceTrajectory,ReferenceGrid,MotionFields,varargin)
-            obj.KspaceTrajectory            = KspaceTrajectory; % Should be scaled between [ImDim(1) ImDim(2) ImDim(3)]/2
+            obj.KspaceTrajectory            = KspaceTrajectory;
             obj.AdjointFlag                 = 0;
             obj.NumberOfSpatialDimensions   = size(ReferenceGrid,2);
 
@@ -40,17 +39,6 @@ classdef MotionFieldOperator
             
 %             disp(['>>>  NUFFT type: ',obj.NufftType])
             
-%             if nargin>4
-%                 obj.GridSize = varargin{2};
-%             else
-%                 N=round(size(obj.NewGrid,1)^(1/obj.NumberOfSpatialDimensions));
-%                 obj.GridSize = ones(1, obj.NumberOfSpatialDimensions)*N;
-%             end
-
-            obj.GridSize = round(max(abs(obj.KspaceTrajectory),[],1))*2;
-            
-%             disp('+ Scaling trajectory to [-0.5 ... 0.5] in MotionFieldOperator')
-            obj.KspaceTrajectory = obj.KspaceTrajectory/max(obj.GridSize(:));
             
             if strcmp(obj.NufftType,'finufft')
                 finufft_options.debug                       = 0;
@@ -76,24 +64,24 @@ classdef MotionFieldOperator
                     
             elseif strcmp(obj.NufftType,'gpunufft')
 
-%                 N=; %round(size(obj.NewGrid,1)^(1/obj.NumberOfSpatialDimensions))
+                N=round(size(obj.NewGrid,1)^(1/obj.NumberOfSpatialDimensions));
                 
                 % type 1 = adjoint
 
                 
                 if obj.NumberOfSpatialDimensions == 3
 %                     obj.G_op=gpuNUFFT3D(-permute(obj.NewGrid(:,[2 1 3],:,:,:)/N,[2 1 4 5 3]),[],N);
-                    obj.G_op=gpuNUFFT2D(-permute(obj.NewGrid(:,[2 1 3],:,:,:)./obj.GridSize,[2 1 4 5 3]),obj.GridSize);
+                    obj.G_op=gpuNUFFT2D(-permute(obj.NewGrid(:,[2 1 3],:,:,:)/N,[2 1 4 5 3]),N);
                     
-                    obj.NufftFwdHandle      = @(kspace_traj,new_x,new_y,new_z,x)                  reshape(obj.G_op'*double(x),[],size(x,2));
-                    obj.NufftAdjDvfHandle   = @(kspace_traj,new_x,new_y,new_z,x,dimension)        obj.G_op*(permute(2*pi*1i*spdiags(kspace_traj(:,dimension),0,obj.TrajSize,obj.TrajSize)*x,[1 3 4 5 2])); % pointwise mult with sampling mask first
-                    obj.NufftAdjImHandle    = @(kspace_traj,new_x,new_y,new_z,x)                  obj.G_op*(permute(double(x),[1 3 4 5 2]));
+                    obj.NufftFwdHandle      = @(kspace_traj,new_x,new_y,new_z,x)                  reshape(obj.G_op'*x,[],size(x,2));
+                    obj.NufftAdjDvfHandle   = @(kspace_traj,new_x,new_y,new_z,x,dimension)        obj.G_op*(2*pi*1i*spdiags(kspace_traj(:,dimension),0,obj.TrajSize,obj.TrajSize)*x); % pointwise mult with sampling mask first
+                    obj.NufftAdjImHandle    = @(kspace_traj,new_x,new_y,new_z,x)                  obj.G_op*(double(x));
 
                 elseif obj.NumberOfSpatialDimensions == 2
-                    obj.G_op=gpuNUFFT2D(-permute(obj.NewGrid(:,[2 1],:,:,:)./obj.GridSize,[2 1 4 5 3]),obj.GridSize);
-                    obj.NufftFwdHandle      = @(kspace_traj,new_x,new_y,x)                  reshape(obj.G_op'*double(x),[],size(x,2));
-                    obj.NufftAdjDvfHandle   = @(kspace_traj,new_x,new_y,x,dimension)        obj.G_op*(permute(2*pi*1i*spdiags(kspace_traj(:,dimension),0,obj.TrajSize,obj.TrajSize)*x,[1 3 4 5 2])); % pointwise mult with sampling mask first
-                    obj.NufftAdjImHandle    = @(kspace_traj,new_x,new_y,x)                  obj.G_op*(permute(double(x),[1 3 4 5 2]));
+                    obj.G_op=gpuNUFFT2D(-permute(obj.NewGrid(:,[2 1],:,:,:)/N,[2 1 4 5 3]),N);
+                    obj.NufftFwdHandle      = @(kspace_traj,new_x,new_y,x)                  reshape(obj.G_op'*x,[],size(x,2));
+                    obj.NufftAdjDvfHandle   = @(kspace_traj,new_x,new_y,x,dimension)        obj.G_op*(2*pi*1i*spdiags(kspace_traj(:,dimension),0,obj.TrajSize,obj.TrajSize)*x); % pointwise mult with sampling mask first
+                    obj.NufftAdjImHandle    = @(kspace_traj,new_x,new_y,x)                  obj.G_op*(double(x));
                 end
 
                
@@ -110,7 +98,7 @@ classdef MotionFieldOperator
                 finufft_options.eps                         = 1e-2;
                 obj.NufftOptions = finufft_options;
                 
-%                 N=obj.GridSize;
+                N=round(size(obj.NewGrid,1)^(1/obj.NumberOfSpatialDimensions));
 
                 if obj.NumberOfSpatialDimensions == 3
                     
@@ -119,16 +107,16 @@ classdef MotionFieldOperator
 %                     obj.NufftAdjImHandle    = @(kspace_traj,new_x,new_y,new_z,x)             finufft3d3(2*pi*kspace_traj(:,1),2*pi*kspace_traj(:,2),2*pi*kspace_traj(:,3), double(x),1,obj.NufftOptions.eps,new_x,new_y,new_z,obj.NufftOptions);
                     
                     
-                    obj.NufftFwdHandle      = @(kspace_traj,new_x,new_y,new_z,x)             finufft3d1(2*pi*(new_x)./obj.GridSize(1),2*pi*(new_y)./obj.GridSize(2),2*pi*(new_z)./obj.GridSize(3),double(squeeze(x)),-1,obj.NufftOptions.eps,obj.GridSize(1),obj.GridSize(2),obj.GridSize(3),obj.NufftOptions);
-                    obj.NufftAdjDvfHandle   = @(kspace_traj,new_x,new_y,new_z,x,dimension)   finufft3d2(2*pi*(new_x)./obj.GridSize(1),2*pi*(new_y)./obj.GridSize(2),2*pi*(new_z)./obj.GridSize(3),1,obj.NufftOptions.eps, permute(reshape(2*pi*1i*spdiags(kspace_traj(:,dimension),0,obj.TrajSize,obj.TrajSize)*x,obj.GridSize([2,1,3])),[2,1,3]),obj.NufftOptions);
-                    obj.NufftAdjImHandle    = @(kspace_traj,new_x,new_y,new_z,x)             finufft3d2(2*pi*(new_x)./obj.GridSize(1),2*pi*(new_y)./obj.GridSize(2),2*pi*(new_z)./obj.GridSize(3),1,obj.NufftOptions.eps,permute(reshape(double(x),obj.GridSize([2,1,3])),[2,1,3]),obj.NufftOptions);
+                    obj.NufftFwdHandle      = @(kspace_traj,new_x,new_y,new_z,x)             finufft3d1(2*pi*(new_x)/N,2*pi*(new_y)/N,2*pi*(new_z)/N,double(squeeze(x)),-1,obj.NufftOptions.eps,round(length(kspace_traj(:,1)).^(1/3)),round(length(kspace_traj(:,2)).^(1/3)),round(length(kspace_traj(:,3)).^(1/3)),obj.NufftOptions);
+                    obj.NufftAdjDvfHandle   = @(kspace_traj,new_x,new_y,new_z,x,dimension)   finufft3d2(2*pi*(new_x)/N,2*pi*(new_y)/N,2*pi*(new_z)/N,1,obj.NufftOptions.eps, permute(reshape_to_square(2*pi*1i*spdiags(kspace_traj(:,dimension),0,obj.TrajSize,obj.TrajSize)*x,3),[2,1,3]),obj.NufftOptions);
+                    obj.NufftAdjImHandle    = @(kspace_traj,new_x,new_y,new_z,x)             finufft3d2(2*pi*(new_x)/N,2*pi*(new_y)/N,2*pi*(new_z)/N,1,obj.NufftOptions.eps,permute(reshape_to_square(double(x),3),[2,1,3]),obj.NufftOptions);
                     
                     
 
                 elseif obj.NumberOfSpatialDimensions == 2
-                    obj.NufftFwdHandle      = @(kspace_traj,new_x,new_y,x)                  finufft2d1(2*pi*(new_x)./obj.GridSize(1),2*pi*(new_y)./obj.GridSize(2),double(squeeze(x)),-1,obj.NufftOptions.eps,obj.GridSize(1),obj.GridSize(2));%,obj.NufftOptions);
-                    obj.NufftAdjDvfHandle   = @(kspace_traj,new_x,new_y,x,dimension)        finufft2d2(2*pi*(new_x)./obj.GridSize(1),2*pi*(new_y)./obj.GridSize(2),1,obj.NufftOptions.eps, reshape(2*pi*1i*spdiags(kspace_traj(:,dimension),0,obj.TrajSize,obj.TrajSize)*x,obj.GridSize([2 1])).',obj.NufftOptions);
-                    obj.NufftAdjImHandle    = @(kspace_traj,new_x,new_y,x)                  finufft2d2(2*pi*(new_x)./obj.GridSize(1),2*pi*(new_y)./obj.GridSize(2),1,obj.NufftOptions.eps,reshape(double(x),obj.GridSize([2 1])).',obj.NufftOptions);
+                    obj.NufftFwdHandle      = @(kspace_traj,new_x,new_y,x)                  finufft2d1(2*pi*(new_x)/N,2*pi*(new_y)/N,double(squeeze(x)),-1,obj.NufftOptions.eps,round(length(kspace_traj(:,1)).^(1/2)),round(length(kspace_traj(:,2)).^(1/2)));%,obj.NufftOptions);
+                    obj.NufftAdjDvfHandle   = @(kspace_traj,new_x,new_y,x,dimension)        finufft2d2(2*pi*(new_x)/N,2*pi*(new_y)/N,1,obj.NufftOptions.eps, reshape_to_square(2*pi*1i*spdiags(kspace_traj(:,dimension),0,obj.TrajSize,obj.TrajSize)*x,2).',obj.NufftOptions);
+                    obj.NufftAdjImHandle    = @(kspace_traj,new_x,new_y,x)                  finufft2d2(2*pi*(new_x)/N,2*pi*(new_y)/N,1,obj.NufftOptions.eps,reshape_to_square(double(x),2).',obj.NufftOptions);
                 end
                 
             end
@@ -156,14 +144,14 @@ classdef MotionFieldOperator
                 elseif obj.NumberOfSpatialDimensions==2
                     
                     if strcmp(obj.NufftType,'finufft') || strcmp(obj.NufftType,'finufft_cartesian')
-%                         max(abs(obj.NewGrid(:)))
-%                         max(abs(obj.KspaceTrajectory(:)))
                         for i=1:size(s,2)
+                            size(obj.NewGrid(:,:,i))
+                            size(obj.KspaceTrajectory(:,:,i))
                             s(:,i) = reshape(obj.NufftFwdHandle(obj.KspaceTrajectory(:,:,i),obj.NewGrid(:,1,i),obj.NewGrid(:,2,i),x(:,1)).',[],1);
                         end
                     elseif strcmp(obj.NufftType,'gpunufft')
 %                         for i=1:size(obj.NewGrid,3)
-                            s  = reshape(obj.NufftFwdHandle(obj.KspaceTrajectory(:,:,1),obj.NewGrid(:,1,:),obj.NewGrid(:,2,:),x),[],size(obj.NewGrid,3));
+                            s  = reshape(obj.NufftFwdHandle(obj.KspaceTrajectory(:,:,1),obj.NewGrid(:,1,1),obj.NewGrid(:,2,1),x),[],size(obj.NewGrid,3));
 %                         end
                     end
                     
@@ -183,7 +171,7 @@ classdef MotionFieldOperator
                         end
                     elseif strcmp(obj.NufftType,'gpunufft')
                         for i=1:size(s,2)
-                            s(:,i,:) = obj.NufftAdjDvfHandle(obj.KspaceTrajectory(:,:,1),obj.NewGrid(:,1,1),obj.NewGrid(:,2,1),obj.NewGrid(:,3,jj),x,i);
+                            s(:,i,:) = obj.NufftAdjDvfHandle(obj.KspaceTrajectory(:,:,1),obj.NewGrid(:,1,1),obj.NewGrid(:,2,1),obj.NewGrid(:,3,1),x,i);
                         end
                     end
 
