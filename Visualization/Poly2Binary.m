@@ -26,7 +26,7 @@ if numel(size(squeeze(image)))>2
 
 else
     
-    mask_total = Poly2Binary_2D(squeeze(abs(image)));
+    mask_total = imgaussfilt(double(Poly2Binary_2D(squeeze(abs(image)))),2);
 end
 
 

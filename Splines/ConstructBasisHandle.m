@@ -41,7 +41,13 @@ end
 %             Bases{i}    = @(x_order,y_order) speye(options.N(1)^2,options.N(1)^2);
         
         elseif options.dimension==3 %3D
-            Bases{i}    = @(x_order,y_order,z_order) (ConstructSplineBasis([options.N(1),options.N(2),options.N(3)],[options.spline_orders(i),options.spline_orders(i),options.spline_orders_z(i)],options.dimension,options.spatial_ordering,[x_order,y_order,z_order]));
+            
+           
+            if options.spline_orders(i)==options.N(i)
+                Bases{i}    = @(x_order,y_order, z_order) speye(options.N(i)^3,options.N(1)^3);
+            else
+                Bases{i}    = @(x_order,y_order,z_order) (ConstructSplineBasis([options.N(1),options.N(2),options.N(3)],[options.spline_orders(i),options.spline_orders(i),options.spline_orders_z(i)],options.dimension,options.spatial_ordering,[x_order,y_order,z_order]));
+            end
         end
         
         

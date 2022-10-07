@@ -30,13 +30,14 @@ function [ReferenceImage,Kdata,varargout]=CalibrateReferenceAndKdata(ReferenceIm
     
 %     scaling_handle = @(x) mean(abs(x),'all');
     scaling_handle = @(x) norm(x,'fro');
+%     scaling_handle = @(x) quantile(abs(x(:)), 0.9);
     
     pars = set_default(pars,'calibration_readouts',1:min(size(Kdata,2),100));
     
     traj_magn = sqrt(sum(Traj(:,:,pars.calibration_readouts(1)).^2,2));
     [~,ind]=min(traj_magn,[],1);
     pars = set_default(pars,'calibration_indices_on_readout',ind+[-9:9]);
-    
+    pars = set_default(pars,'magnitude_data_target',1);
     ordering = [2 1 3];
     calibration_coordinates(:,:,:) = Traj(pars.calibration_indices_on_readout,:,pars.calibration_readouts);
     calibration_coordinates(:,:,:) = calibration_coordinates(:,ordering(1:size(Traj,2)),:);
@@ -54,7 +55,7 @@ function [ReferenceImage,Kdata,varargout]=CalibrateReferenceAndKdata(ReferenceIm
     
     % scaling due to data
     magn_data =  scaling_handle(Kdata(pars.calibration_indices_on_readout,pars.calibration_readouts));
-    magn_data_target = 1;
+    magn_data_target = pars.magnitude_data_target;
     scaling_data = 1 / magn_data * magn_data_target ;
 
 

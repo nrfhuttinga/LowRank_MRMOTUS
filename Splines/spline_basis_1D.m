@@ -37,23 +37,24 @@ spline_centers=linspace(-spline_fov/2,spline_fov/2,SplineOrder);
 
 B = zeros(N_gridpoints,length(spline_centers));
 dx = spline_centers(2)-spline_centers(1);
+deltax = 1/N_gridpoints;
 
 spline_center_index = 1;
 for j=spline_centers
     x1 = linspace(-spline_fov/2,spline_fov/2,N_gridpoints)-j; % 
-    B(:,spline_center_index) =  cubic_spline_1d(x1,DerivativeOrder).';%.*deltax^derivative_order;
+    B(:,spline_center_index) =  (cubic_spline_1d(x1,DerivativeOrder).').*deltax^DerivativeOrder;%
     
     if spline_center_index==1
         for k=1:2
             x1 = x1 + dx; % 
-            B(:,spline_center_index) = B(:,spline_center_index) + cubic_spline_1d(x1,DerivativeOrder).';%.*deltax^derivative_order;
+            B(:,spline_center_index) = B(:,spline_center_index) + (cubic_spline_1d(x1,DerivativeOrder).')*deltax^DerivativeOrder;%.*deltax^derivative_order;
         end
     end
     
     if spline_center_index==length(spline_centers)
         for k=1:2
             x1 = x1-dx; % 
-            B(:,spline_center_index) = B(:,spline_center_index) + cubic_spline_1d(x1,DerivativeOrder).';%.*deltax^derivative_order;
+            B(:,spline_center_index) = B(:,spline_center_index) + (cubic_spline_1d(x1,DerivativeOrder).')*deltax^DerivativeOrder;%.*deltax^derivative_order;
         end
     end
     

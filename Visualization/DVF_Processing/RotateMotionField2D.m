@@ -1,5 +1,7 @@
 function rotatedMF = RotateMotionField2D( motionfield , no_rotations )
-% rotate motionfield 'no_no_rotations' counterclockwise
+
+% rotate motionfield 'no_rotations' counterclockwise
+
 
 no_rotations = mod(no_rotations,4);
 

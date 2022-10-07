@@ -21,6 +21,11 @@ function [imgs_out,cm] = MotionImageOverlay_3Dt(Images,motionFields,dimension,sl
 
     [dim2,dim1,dim3,~,dynamics]=size(Images);
 
+    if iscell(motionFields)
+        motionFields = DVFCell2Mat(motionFields);
+        motionFields = reshape(motionFields,dim2*dim1*dim3,[],dynamics);
+    end
+
     motionFields_reshaped = reshape(motionFields,dim2,dim1,dim3,size(motionFields,2),dynamics);
 
         
@@ -95,7 +100,7 @@ function [imgs_out,cm] = MotionImageOverlay_3Dt(Images,motionFields,dimension,sl
     h=figure('units','normalized','outerposition',[0 0 1 1]);
     for i=1:dynamics
 
-        mf = {-motionFields_reshaped(:,:,:,1,i)*scaling,-motionFields_reshaped(:,:,:,2,i)*scaling,motionFields_reshaped(:,:,:,3,i)*scaling};
+        mf = {-motionFields_reshaped(:,:,:,1,i)*scaling,-motionFields_reshaped(:,:,:,2,i)*scaling,-motionFields_reshaped(:,:,:,3,i)*scaling};
 
 
         Image = squeeze(Images(:,:,:,i));

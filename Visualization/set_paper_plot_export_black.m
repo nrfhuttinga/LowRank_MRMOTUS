@@ -20,7 +20,9 @@ set(potential_title_objects,'Color','w');
 
 C = findall(gcf,'type','ColorBar');
 if ~isempty(C)
-    C.Color = 'white';
+    for i=1:size(C,1)
+        C(i,1).Color = 'white';
+    end
 end
 
 a=findobj(gcf, 'Type', 'Legend');

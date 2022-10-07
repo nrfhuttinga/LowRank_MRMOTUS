@@ -1,4 +1,4 @@
-function [index,phase] = RespiratoryBinning(par)
+function [index,phase,varargout] = RespiratoryBinning(par)
     % Function to sort 'par.surrogate_signal'   
     % 
     % Inputs:
@@ -19,10 +19,14 @@ function [index,phase] = RespiratoryBinning(par)
     par = set_default(par,'thresh',0.005);                  % sensitivity of the peak detection
     par = set_default(par,'resp_phases',5);                 % number of respiratory phases to bin in
     par = set_default(par,'return_extreme_phase',0);        % 0 - return all phases, 1 - return end-exhale, 2 - return end-inhale
+    par = set_default(par,'split_in_exhale',1);             % only for kmeans, split inhale and exhale first with hybrid binning
     
+    varargout{1}=[];
+    varargout{2}=[];
     
     phase=[];
 
+    SpokesPerBin = round(numel(par.surrogate_signal)/par.resp_phases);
 
     if strcmpi('amplitude',par.binning_strategy)
         fprintf('+Performing amplitude binning \n');
@@ -50,7 +54,6 @@ function [index,phase] = RespiratoryBinning(par)
         [~,index] = sort(phase,'descend'); 
         
         
-        SpokesPerBin = round(numel(par.surrogate_signal)/par.resp_phases);
 
         if par.return_extreme_phase>0 % only return extreme phases
             index =   [ index([1:round(SpokesPerBin/2),end-round(SpokesPerBin/2)+1:end]),...
@@ -63,25 +66,12 @@ function [index,phase] = RespiratoryBinning(par)
 
     elseif strcmpi('hybrid',par.binning_strategy)
         fprintf('+Performing hybrid binning \n');
-        maxtab=[];
-        mintab=[];
-        thresh=par.thresh;
-        while isempty(maxtab)
-         [maxtab,mintab] = PeakDetection(par.surrogate_signal,thresh);
-         thresh=thresh*.75;
-        end
 
-        figure;
-        plot(par.surrogate_signal); hold on;
-        plot(maxtab(:,1),maxtab(:,2),'.','MarkerSize',20);
-        plot(mintab(:,1),mintab(:,2),'.','MarkerSize',20);
-        hold off;
-        title('Peak detection');
-        peaks = zeros(length(par.surrogate_signal),1);
-        peaks(maxtab(:,1)) = 1;
-        peaks(mintab(:,1)) = -1;
-        phase = CalculatePhase(peaks);
-
+         
+        pr = par;
+        pr.binning_strategy = 'phase';
+        [~,phase]=RespiratoryBinning(pr);
+        
         inexhale = zeros(length(phase),1);
         for npa = 1:length(phase)
             if phase(npa) >= pi
@@ -91,9 +81,9 @@ function [index,phase] = RespiratoryBinning(par)
             end
         end
 
-        respiration_inhale = par.surrogate_signal(inexhale == 1);
+        respiration_inhale = par.surrogate_signal(inexhale == -1);
         nline_in = floor(length(respiration_inhale)/par.resp_phases);
-        respiration_exhale = par.surrogate_signal(inexhale == -1);
+        respiration_exhale = par.surrogate_signal(inexhale == 1);
         nline_ex = floor(length(respiration_exhale)/par.resp_phases);
         if nline_in > nline_ex
             nline_in = nline_ex;
@@ -101,6 +91,8 @@ function [index,phase] = RespiratoryBinning(par)
             nline_ex = nline_in;
         end
 
+        
+        
         [val_inhale,~] = unique(sort(respiration_inhale(1:nline_in*par.resp_phases),'descend'));
         [val_exhale,~] = unique(sort(respiration_exhale(1:nline_ex*par.resp_phases),'ascend'));
 
@@ -108,26 +100,34 @@ function [index,phase] = RespiratoryBinning(par)
         real_ex_index=[];
 
         for t=1:numel(val_inhale)
-            real_in_index = [real_in_index,find(par.surrogate_signal == val_inhale(t))];
+            real_in_index = [real_in_index,find(par.surrogate_signal(:).' == val_inhale(t))];
         end
 
         for t=1:numel(val_exhale)
-            real_ex_index = [real_ex_index,find(par.surrogate_signal == val_exhale(t))];
+            real_ex_index = [real_ex_index,find(par.surrogate_signal(:).' == val_exhale(t))];
         end
-
-        index = [fliplr(real_in_index),real_ex_index];
+        varargout{1}=fliplr(real_in_index);
+        varargout{2}=real_ex_index;
+        
+        
+        if par.return_extreme_phase == 0
+            index = [real_in_index,fliplr(real_ex_index)];
+        elseif par.return_extreme_phase>0
+            index = [real_in_index(end-round(SpokesPerBin/2):end),real_ex_index(end-round(SpokesPerBin/2):end)];
+        end
 
     elseif strcmpi('amplitude_midpos',par.binning_strategy)
 
         n_readouts = 0;
         par.resp_phases = par.resp_phases + 1; 
         while n_readouts < par.target_number_of_readouts && par.resp_phases > 5 
+%             n_readouts
 
             clearvars  ci_95
 
 
 
-            par.resp_phases = par.resp_phases - 1;
+            par.resp_phases = par.resp_phases - .1;
             [amplitudes,index] = sort(par.surrogate_signal,'descend');
             bin_oversampling = 100;
 
@@ -136,7 +136,7 @@ function [index,phase] = RespiratoryBinning(par)
             mu_amplitudes = mean(amplitudes(:));
             sigma_amplitudes = std(amplitudes(:));
 
-            z_score = 1.95;
+            z_score = 1.6;
             ci_95 = [mu_amplitudes-z_score*sigma_amplitudes/sqrt(n) , mu_amplitudes+z_score*sigma_amplitudes/sqrt(n)];
             motion_amplitude_range = (ci_95(2)-ci_95(1)); 
 
@@ -181,6 +181,28 @@ function [index,phase] = RespiratoryBinning(par)
         set_paper_plot_export;
         set_figure_fullscreen;
         
+    elseif strcmpi('kmeans',par.binning_strategy)
+        
+        par.binning_strategy = 'hybrid';
+        [~,~,inhale_idx,exhale_idx] = RespiratoryBinning(par);
+        
+        % split inhale and exhale?
+        if ~par.split_in_exhale
+            inhale_idx = [inhale_idx(:);exhale_idx(:)];
+            exhale_idx = [];
+        end
+
+
+        [index,phase]=KmeansSorting(inhale_idx,exhale_idx,par);
+
+        
     else
         error('>>Wrong input for par.binning_strategy \n');
     end
+   
+    disp('done');
+end
+    
+    
+    
+ 

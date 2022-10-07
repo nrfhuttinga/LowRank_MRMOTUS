@@ -72,7 +72,11 @@ function f1=slicer5d(data,aspect,varargin)
         dim = [dim,ones(1,5-ndim)];
     end
     
-    range=[min(data(:)),max(data(:))];
+    if numel(varargin)>=2
+        range = varargin{2};
+    else
+        range=[min(data(:)),max(data(:))];
+    end
     step=abs(max(data(:))-min(data(:)))/100;
     lastPoint = [];
     whichView = 1;
@@ -83,7 +87,7 @@ function f1=slicer5d(data,aspect,varargin)
     titleLines = {'Transversal view: ', 'Coronal view: ', 'Sagittal view: '};
 
 %% Make figure
-    if nargin<3
+    if numel(varargin)==0 || isempty(varargin{1})
         f1=figure('Position',[50 50 800 800],'Name',inputname(1),'Color',[1 1 1],...
             'WindowScrollWheelFcn', @scroller, ....
             'WindowKeyPressFcn',@scale, ...

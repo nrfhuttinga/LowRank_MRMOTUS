@@ -1,4 +1,4 @@
-function [Phi,Psi,MRMOTUS_recon, param_struct]=LowRank_MRMOTUS_Recon(DataStruct_processed,param_struct)
+function [Phi,Psi,MRMOTUS_recon, param_struct]=LowRank_MRMOTUS_Recon_GPU(DataStruct_processed,param_struct)
 %% Function to reconstruct motion-field components 'Phi' and 'Psi', given preprocessed 'DataStruct' and parameters in 'param_struct'
 %
 % DataStruct_processed should contain the following fields:
@@ -15,18 +15,18 @@ function [Phi,Psi,MRMOTUS_recon, param_struct]=LowRank_MRMOTUS_Recon(DataStruct_
 %% Calibrate and sort data according to parameters
 
 
-[DataStruct_processed.ReferenceImage,DataStruct_processed.RawKspaceData] = CalibrateReferenceAndKdata(DataStruct_processed.ReferenceImage,DataStruct_processed.RawKspaceData,DataStruct_processed.Coordinates,param_struct);
+% [DataStruct_processed.ReferenceImage,DataStruct_processed.RawKspaceData] = CalibrateReferenceAndKdata(DataStruct_processed.ReferenceImage,DataStruct_processed.RawKspaceData,DataStruct_processed.Coordinates,param_struct);
 
-[DataStruct_processed, param_struct] = SortData(DataStruct_processed,param_struct);
+% [DataStruct_processed, param_struct] = SortData(DataStruct_processed,param_struct);
 
 % export_suffix = param_struct.export_suffix;
 
     
-DataStruct_processed.Coordinates = demax(DataStruct_processed.Coordinates)/2;
+% DataStruct_processed.Coordinates = DataStruct_processed.Coordinates./max(abs(DataStruct_processed.Coordinates),[],[2 3])/2;
 
 %% Init MR MOTUS operator
 
-MRMOTUS_recon           = MRMOTUS_Operator((DataStruct_processed.ReferenceImage(:)),permute(DataStruct_processed.Coordinates,[2 1 3]),param_struct);
+MRMOTUS_recon           = MRMOTUS_Operator(DataStruct_processed.ReferenceImage,permute(DataStruct_processed.Coordinates,[2 1 3]),param_struct);
 % MRMOTUS_recon.RegularizationFlag = 0;
 
 %% Actual reconstructions
@@ -58,12 +58,11 @@ tic
 
 % Export results
 disp('+Saving some reconstruction results...');
-save([param_struct.export_folder,'dvf',param_struct.export_suffix,'.mat'],'dvf','-v7.3')
-save([param_struct.export_folder,'recon_info',param_struct.export_suffix,'.mat'],'info');
+% save([param_struct.export_folder,'dvf',param_struct.export_suffix,'.mat'],'dvf','-v7.3')
+% save([param_struct.export_folder,'recon_info',param_struct.export_suffix,'.mat'],'info');
 
 disp('+Constructing low-rank motion-field components from coefficients')
 [Phi,~,Psi,DVF_ops] = MRMOTUS_recon.ExpandMotionfieldCoefficients(dvf);
-
 
 
 end
